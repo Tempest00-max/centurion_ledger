@@ -23,11 +23,32 @@
             border-color: rgba(34, 211, 238, 0.5);
             box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
         }
+
+        /* Spinner Animation */
+        .loader {
+            border: 3px solid rgba(34, 211, 238, 0.1);
+            border-top: 3px solid #22d3ee;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
 <body
     class="min-h-screen flex items-center justify-center p-6 bg-[#f8fafc] dark:bg-[#0f172a] text-[#1e293b] dark:text-[#f8fafc]">
+
     <button onclick="toggleTheme()"
         class="fixed top-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 z-50">
         <span id="themeIcon" class="text-xl">🌙</span>
@@ -35,6 +56,7 @@
 
     <div
         class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[3rem] p-10 space-y-8 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
+
         <div class="text-center space-y-2">
             <div class="hidden dark:block">
                 <h1
@@ -50,8 +72,17 @@
             </div>
         </div>
 
+        <!-- Drop Zone with Spinner Overlay -->
         <div id="dropZone"
-            class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer hover-glow transition-all duration-300 group">
+            class="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer hover-glow transition-all duration-300 group">
+
+            <!-- Spinner (Hidden by default) -->
+            <div id="loadingOverlay"
+                class="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-[2.5rem] flex flex-col items-center justify-center hidden z-10">
+                <div class="loader mb-3"></div>
+                <p class="text-[10px] font-black tracking-widest text-cyan-500 animate-pulse">WAKING ENGINE...</p>
+            </div>
+
             <div
                 class="w-16 h-16 bg-slate-100 dark:bg-slate-800/50 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <svg class="w-8 h-8 text-slate-400 dark:text-slate-500 group-hover:text-cyan-400" fill="none"
@@ -74,10 +105,10 @@
                 class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-5 outline-none focus:border-cyan-500/50 font-mono text-cyan-600 dark:text-cyan-400 transition-all text-center tracking-widest uppercase text-xs">
             <div class="grid grid-cols-2 gap-4">
                 <button id="encryptBtn"
-                    class="bg-cyan-500 text-white dark:text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight">Encrypt
+                    class="bg-cyan-500 text-white dark:text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight disabled:opacity-50">Encrypt
                     Stream</button>
                 <button id="decryptBtn"
-                    class="bg-pink-500 text-white dark:bg-transparent dark:border dark:border-rose-500/40 dark:text-rose-400 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight">Decrypt
+                    class="bg-pink-500 text-white dark:bg-transparent dark:border dark:border-rose-500/40 dark:text-rose-400 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight disabled:opacity-50">Decrypt
                     Stream</button>
             </div>
         </div>
@@ -114,6 +145,12 @@
             terminal.scrollTop = terminal.scrollHeight;
         };
 
+        const setUIState = (loading) => {
+            document.getElementById('loadingOverlay').classList.toggle('hidden', !loading);
+            document.getElementById('encryptBtn').disabled = loading;
+            document.getElementById('decryptBtn').disabled = loading;
+        };
+
         document.getElementById('dropZone').onclick = () => document.getElementById('fileInput').click();
         document.getElementById('fileInput').onchange = e => {
             selectedFile = e.target.files[0];
@@ -125,11 +162,12 @@
             const pass = document.getElementById('key').value;
             if (!selectedFile || !pass) return log("ABORT: DATA_OR_KEY_MISSING", 'error');
 
+            setUIState(true);
             log(`INITIATING_${actionValue.toUpperCase()}...`);
             const fd = new FormData();
             fd.append('file', selectedFile);
             fd.append('password', pass);
-            fd.append('action', actionValue); // SYNC: Correctly sends "action" to match server console log
+            fd.append('action', actionValue);
 
             try {
                 const res = await fetch(API_BASE_URL, { method: 'POST', body: fd });
@@ -147,6 +185,8 @@
             } catch (e) {
                 log("FAILURE: " + e.message, 'error');
                 console.error(e);
+            } finally {
+                setUIState(false);
             }
         }
 
