@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAULT-X2 | Hybrid Interface</title>
+    <title>VAULT-X2 | Hybrid Gateway</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
+            darkMode: 'class', // Vital for the toggle to function
         }
     </script>
     <style>
@@ -16,74 +16,63 @@
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            transition: all 0.5s ease;
+            transition: background 0.5s ease;
         }
 
-        /* Light Mode Styles (The White Look) */
-        .light-bg {
-            background: #f8fafc;
-            color: #1e293b;
+        /* Specific header italic style for Dark Mode */
+        .solaris-italic {
+            font-style: italic;
+            tracking: tight;
         }
 
-        .light-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        /* Dark Mode Styles (The Tactical Look) */
-        .dark-bg {
-            background: radial-gradient(circle at center, #1e293b, #0f172a);
-            color: #f8fafc;
-        }
-
-        .dark-card {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .shimmer {
-            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0) 100%);
-            background-size: 200% 100%;
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% {
-                background-position: -200% 0;
-            }
-
-            100% {
-                background-position: 200% 0;
-            }
+        /* Tactical glow animation for drop zone in dark mode */
+        .dark .hover-glow:hover {
+            border-color: rgba(34, 211, 238, 0.5);
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
         }
     </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-6 light-bg dark:dark-bg">
+<body
+    class="min-h-screen flex items-center justify-center p-6 bg-[#f8fafc] dark:bg-[#0f172a] text-[#1e293b] dark:text-[#f8fafc]">
 
-    <!-- Theme Toggle Button -->
+    <!-- 🌓 Theme Toggle Button -->
     <button onclick="toggleTheme()"
         class="fixed top-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 z-50">
         <span id="themeIcon" class="text-xl">🌙</span>
     </button>
 
     <div
-        class="light-card dark:dark-card w-full max-w-lg rounded-[3rem] p-10 space-y-8 relative overflow-hidden shadow-2xl">
+        class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[3rem] p-10 space-y-8 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
+
+        <!-- 🌐 Dynamic Headers -->
         <div class="text-center space-y-2">
-            <h1
-                class="text-5xl font-extrabold tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600">
-                VAULT-X2
-            </h1>
-            <p class="text-[10px] tracking-[0.4em] font-black text-slate-400 dark:text-cyan-500/50 uppercase">Secure
-                Neural Gateway</p>
+
+            <!-- Dark Mode Header (Solaris Elite Interface) -->
+            <div class="hidden dark:block">
+                <h1
+                    class="text-4xl font-extrabold italic tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 solaris-italic">
+                    VAULT-X2
+                </h1>
+                <p class="text-[10px] tracking-[0.4em] font-black text-cyan-500/50 uppercase">Solaris Elite Interface
+                </p>
+            </div>
+
+            <!-- Light Mode Header (Secure Neural Gateway) -->
+            <div class="dark:hidden block">
+                <h1 class="text-4xl font-extrabold tracking-tighter text-cyan-500">
+                    VAULT-X2
+                </h1>
+                <p class="text-[10px] tracking-[0.3em] font-bold text-slate-400 uppercase mt-1">Secure Neural Gateway
+                </p>
+            </div>
         </div>
 
+        <!-- File Input Drop Zone -->
         <div id="dropZone"
-            class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:border-cyan-500/50 transition-all duration-500 group">
+            class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer hover-glow transition-all duration-300 group">
             <div
-                class="w-16 h-16 bg-slate-100 dark:bg-slate-800/50 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-all">
+                class="w-16 h-16 bg-slate-100 dark:bg-slate-800/50 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <svg class="w-8 h-8 text-slate-400 dark:text-slate-500 group-hover:text-cyan-400" fill="none"
                     stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -99,24 +88,28 @@
             <input type="file" id="fileInput" class="hidden">
         </div>
 
+        <!-- Key Input and Hybrid Buttons -->
         <div class="space-y-4">
             <input type="password" id="key" placeholder="ACCESS_KEY"
                 class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-5 outline-none focus:border-cyan-500/50 font-mono text-cyan-600 dark:text-cyan-400 transition-all text-center tracking-widest uppercase text-xs">
 
             <div class="grid grid-cols-2 gap-4">
+                <!-- Encrypt Button (Tactical Style in Dark Mode) -->
                 <button id="encryptBtn"
-                    class="bg-cyan-500 text-white dark:text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight">
+                    class="bg-cyan-500 text-white dark:text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight hover:shadow-[0_0_20px_rgba(34,211,238,0.3)]">
                     Encrypt Stream
                 </button>
+                <!-- Decrypt Button (Hybrid: Pink in Light, Tactical Border in Dark) -->
                 <button id="decryptBtn"
-                    class="bg-pink-500 text-white font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight">
+                    class="bg-pink-500 text-white dark:bg-transparent dark:border dark:border-rose-500/40 dark:text-rose-400 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight hover:bg-rose-500/10">
                     Decrypt Stream
                 </button>
             </div>
         </div>
 
+        <!-- Terminal Output Area -->
         <div id="terminal"
-            class="bg-slate-900/10 dark:bg-black/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 h-36 overflow-y-auto hidden">
+            class="bg-slate-900/10 dark:bg-black/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 h-32 overflow-y-auto hidden">
             <div class="font-mono text-[10px] space-y-1" id="statusLog">
                 <p class="text-slate-400 dark:text-cyan-500/30">>> STANDBY</p>
             </div>
@@ -124,7 +117,7 @@
     </div>
 
     <script>
-        // Theme Logic
+        // 🌓 Theme Logic
         function toggleTheme() {
             const html = document.documentElement;
             const icon = document.getElementById('themeIcon');
@@ -139,35 +132,40 @@
             }
         }
 
-        // Auto-detect system preference
+        // Auto-detect preference on load
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
             document.getElementById('themeIcon').innerText = '☀️';
+        } else {
+            document.getElementById('themeIcon').innerText = '🌙';
         }
 
-        // Core Backend Logic
+        // 🧠 Core Backend Integration
         let selectedFile = null;
         const log = (msg, type = 'info') => {
             const terminal = document.getElementById('terminal');
             const logArea = document.getElementById('statusLog');
             terminal.classList.remove('hidden');
-            const colors = { info: 'text-blue-500 dark:text-cyan-400', success: 'text-emerald-500', error: 'text-rose-500' };
+            const colors = { info: 'text-cyan-600 dark:text-cyan-400', success: 'text-emerald-500', error: 'text-rose-500' };
             logArea.innerHTML += `<p class="${colors[type]} tracking-tight">>> ${msg}</p>`;
             terminal.scrollTop = terminal.scrollHeight;
         };
 
+        // File Selection Logic
         const dz = document.getElementById('dropZone');
         dz.onclick = () => document.getElementById('fileInput').click();
         document.getElementById('fileInput').onchange = e => {
             selectedFile = e.target.files[0];
             document.getElementById('fileName').innerText = selectedFile.name;
+            document.getElementById('fileName').style.color = '#00f2fe';
             log(`FILE_CAPTURED: ${selectedFile.name.toUpperCase()}`);
         };
 
+        // Process Encryption/Decryption
         async function process(action) {
             const key = document.getElementById('key').value;
-            if (!selectedFile || !key) return log("ABORT: MISSING DATA", 'error');
-            log(`PROCESS_${action.toUpperCase()}...`);
+            if (!selectedFile || !key) return log("ABORT: DATA_OR_KEY_MISSING", 'error');
+            log(`INITIATING_${action.toUpperCase()}...`);
             const fd = new FormData();
             fd.append('file', selectedFile);
             fd.append('key', key);
@@ -179,8 +177,8 @@
                 a.href = URL.createObjectURL(blob);
                 a.download = action === 'encrypt' ? selectedFile.name + ".vault" : selectedFile.name.replace('.vault', '');
                 a.click();
-                log("COMPLETE", 'success');
-            } catch (e) { log("FAILURE: " + e.message, 'error'); }
+                log(`${action.toUpperCase()}_SUCCESSFUL`, 'success');
+            } catch (e) { log("CRITICAL_FAILURE: " + e.message, 'error'); }
         }
 
         document.getElementById('encryptBtn').onclick = () => process('encrypt');
