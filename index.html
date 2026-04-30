@@ -42,7 +42,7 @@
     <div
         class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[3rem] p-10 space-y-8 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
 
-        <!-- 🌐 Dynamic Headers -->
+        <!-- 🌐 Headers -->
         <div class="text-center space-y-2">
             <div class="hidden dark:block">
                 <h1
@@ -59,7 +59,7 @@
             </div>
         </div>
 
-        <!-- File Input Drop Zone -->
+        <!-- Drop Zone -->
         <div id="dropZone"
             class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer hover-glow transition-all duration-300 group">
             <div
@@ -79,23 +79,23 @@
             <input type="file" id="fileInput" class="hidden">
         </div>
 
-        <!-- Key Input and Hybrid Buttons -->
+        <!-- Controls -->
         <div class="space-y-4">
             <input type="password" id="key" placeholder="ACCESS_KEY"
                 class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-5 outline-none focus:border-cyan-500/50 font-mono text-cyan-600 dark:text-cyan-400 transition-all text-center tracking-widest uppercase text-xs">
             <div class="grid grid-cols-2 gap-4">
                 <button id="encryptBtn"
-                    class="bg-cyan-500 text-white dark:text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight hover:shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+                    class="bg-cyan-500 text-white dark:text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight">
                     Encrypt Stream
                 </button>
                 <button id="decryptBtn"
-                    class="bg-pink-500 text-white dark:bg-transparent dark:border dark:border-rose-500/40 dark:text-rose-400 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight hover:bg-rose-500/10">
+                    class="bg-pink-500 text-white dark:bg-transparent dark:border dark:border-rose-500/40 dark:text-rose-400 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight">
                     Decrypt Stream
                 </button>
             </div>
         </div>
 
-        <!-- Terminal Output Area -->
+        <!-- Log Area -->
         <div id="terminal"
             class="bg-slate-900/10 dark:bg-black/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 h-32 overflow-y-auto hidden">
             <div class="font-mono text-[10px] space-y-1" id="statusLog">
@@ -105,7 +105,7 @@
     </div>
 
     <script>
-        // 🌓 Theme Toggle Logic
+        // Theme Logic
         function toggleTheme() {
             const html = document.documentElement;
             const icon = document.getElementById('themeIcon');
@@ -125,7 +125,7 @@
             document.getElementById('themeIcon').innerText = '☀️';
         }
 
-        // 🧠 Core Backend Bridge
+        // --- CORE BRIDGE ---
         const API_BASE_URL = "https://vault-backend-ftsk.onrender.com/process-file";
         let selectedFile = null;
 
@@ -148,40 +148,44 @@
         };
 
         async function process(action) {
-            const password = document.getElementById('key').value;
-            if (!selectedFile || !password) return log("ABORT: DATA_OR_KEY_MISSING", 'error');
+            const keyInput = document.getElementById('key').value;
+            if (!selectedFile || !keyInput) return log("ABORT: DATA_OR_KEY_MISSING", 'error');
 
             log(`INITIATING_${action.toUpperCase()}...`);
 
             const fd = new FormData();
             fd.append('file', selectedFile);
-            fd.append('password', password); // Matches FastAPI 'password' param
-            fd.append('mode', action);      // Matches FastAPI 'mode' param
+            fd.append('password', keyInput); // Sync with FastAPI main.py
+            fd.append('mode', action);      // Sync with FastAPI main.py
 
             try {
-                // Warning: Free-tier Render takes ~50s to wake up on first call
                 const res = await fetch(API_BASE_URL, {
                     method: 'POST',
                     body: fd
                 });
 
                 if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.detail || "AUTH_FAILED");
+                    const errText = await res.text();
+                    let errorMsg = "SERVER_REJECTED_REQUEST";
+                    try {
+                        const errJson = JSON.parse(errText);
+                        errorMsg = errJson.detail || errorMsg;
+                    } catch (e) { }
+                    throw new Error(errorMsg);
                 }
 
                 const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
+                a.style.display = 'none';
+                a.href = url;
 
-                // Matches the naming logic in main.py
                 const outName = action === 'encrypt' ? `${selectedFile.name}.vx2` : selectedFile.name.replace('.vx2', '');
                 a.download = outName;
 
                 document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
-
+                window.URL.revokeObjectURL(url);
                 log(`${action.toUpperCase()}_SUCCESSFUL`, 'success');
             } catch (e) {
                 log("FAILURE: " + e.message, 'error');
