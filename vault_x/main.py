@@ -8,19 +8,16 @@ from security import encrypt_file, decrypt_file
 
 app = FastAPI()
 
-# --- RED TEAM HARDENING: STRICT CORS ---
-# Only allow your specific GitHub Pages domain
-origins = ["https://tempest00-max.github.io"]
-
+# --- FIX: PERMISSIVE CORS TO END THE CYCLES ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"], 
     allow_credentials=True,
-    allow_methods=["POST"], 
+    allow_methods=["*"], 
     allow_headers=["*"],
 )
 
-# Basic Rate Limiting to prevent brute-force attacks
+# Basic Rate Limiting
 request_history = {}
 
 @app.post("/process-file")
@@ -29,7 +26,6 @@ async def process_file(
     password: str = Form(...), 
     mode: str = Form(...)
 ):
-    # Rate Limiting Logic
     client_ip = "global_user" 
     now = time.time()
     if client_ip in request_history and now - request_history[client_ip] < 2:
@@ -52,7 +48,6 @@ async def process_file(
             headers={"Content-Disposition": f"attachment; filename={out_name}"}
         )
     except Exception:
-        # Prevent "Side-Channel" leaks by using a generic error
         raise HTTPException(status_code=401, detail="AUTHENTICATION_FAILED")
 
 if __name__ == "__main__":
