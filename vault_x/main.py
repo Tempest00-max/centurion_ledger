@@ -8,8 +8,7 @@ from security import encrypt_file, decrypt_file
 
 app = FastAPI()
 
-# --- CORS CONFIGURATION ---
-# allow_origins=["*"] ensures your GitHub Pages site isn't blocked by the browser
+# --- PERMISSIVE CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -18,25 +17,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Basic Rate Limiting Logic
-request_history = {}
-
 @app.post("/process-file")
 async def process_file(
     file: UploadFile = File(...), 
     password: str = Form(...), 
-    mode: str = Form(...)
+    mode: str = Form(...) # The server MUST receive "mode"
 ):
-    # Rate Limiting: 1 request every 2 seconds per global instance
-    client_ip = "global_user" 
-    now = time.time()
-    if client_ip in request_history and now - request_history[client_ip] < 2:
-        raise HTTPException(status_code=429, detail="RATE_LIMIT_EXCEEDED")
-    request_history[client_ip] = now
-
     try:
         content = await file.read()
-        
         if mode == "encrypt":
             result = encrypt_file(content, password)
             out_name = f"{file.filename}.vx2"
@@ -50,7 +38,6 @@ async def process_file(
             headers={"Content-Disposition": f"attachment; filename={out_name}"}
         )
     except Exception:
-        # Generic error to prevent side-channel leaks
         raise HTTPException(status_code=401, detail="AUTHENTICATION_FAILED")
 
 if __name__ == "__main__":
