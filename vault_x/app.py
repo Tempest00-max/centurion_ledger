@@ -7,13 +7,12 @@ import base64
 import io
 
 app = Flask(__name__)
-# Enable CORS so your GitHub-hosted frontend can talk to your local WSL server
-CORS(app) 
+CORS(app) # Vital for GitHub-to-Local communication
 
 def derive_key(password: str):
     """
-    Standardizes any password into a secure 32-byte key for Fernet.
-    The salt must remain constant for decryption to work.
+    Stretches any password into a secure 32-byte Fernet-compatible key.
+    Salt must remain constant to ensure successful decryption later.
     """
     salt = b'vault_x2_production_salt_2026' 
     kdf = PBKDF2HMAC(
@@ -30,14 +29,11 @@ def encrypt_file():
         file = request.files['file']
         password = request.form['key']
         
-        # 1. Derive key from password
         secret_key = derive_key(password)
         f = Fernet(secret_key)
         
-        # 2. Encrypt the file stream
         encrypted_data = f.encrypt(file.read())
         
-        # 3. Return as a downloadable .vault file
         return send_file(
             io.BytesIO(encrypted_data),
             mimetype='application/octet-stream',
@@ -53,14 +49,14 @@ def decrypt_file():
         file = request.files['file']
         password = request.form['key']
         
-        # 1. Derive the exact same key
+        # Derive the EXACT same key from the provided password
         secret_key = derive_key(password)
         f = Fernet(secret_key)
         
-        # 2. Decrypt the binary stream
+        # This will fail with a 400 error if the key is wrong
         decrypted_data = f.decrypt(file.read())
         
-        # 3. Restore original filename (remove .vault)
+        # Cleanup the filename for the user
         original_name = file.filename.replace('.vault', '')
         
         return send_file(
@@ -70,9 +66,8 @@ def decrypt_file():
             download_name=original_name
         )
     except Exception:
-        # Triggered if password is wrong or data is tampered with
-        return "DECRYPTION_FAILED: Invalid Key or Corrupt Data", 400
+        return "DECRYPTION_FAILED: Invalid Key or Corrupt Stream", 400
 
 if __name__ == '__main__':
-    # Server runs on localhost:5000
+    # Running on port 5000 is hardcoded into the frontend logic
     app.run(port=5000, debug=True)

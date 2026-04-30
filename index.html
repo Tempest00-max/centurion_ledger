@@ -3,22 +3,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VAULT-X2 | Solaris Elite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&display=swap');
 
-        :root {
-            --primary: #00f2fe;
-            --secondary: #4facfe;
-            --bg: #f8fafc;
-        }
-
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--bg);
-            touch-action: pan-y;
+            background: #f8fafc;
         }
 
         .glass {
@@ -38,100 +31,68 @@
             <p class="text-[10px] tracking-[0.3em] font-bold text-slate-400 uppercase mt-1">Secure Neural Gateway</p>
         </div>
 
-        <!-- File Input -->
         <input type="file" id="fileInput" class="hidden">
         <div onclick="document.getElementById('fileInput').click()"
-            class="border-2 border-dashed border-slate-200 rounded-[2rem] p-8 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:border-cyan-400 transition-all duration-300 group">
-            <div
-                class="w-14 h-14 bg-cyan-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg class="w-8 h-8 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-            </div>
+            class="border-2 border-dashed border-slate-200 rounded-[2rem] p-8 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:border-cyan-400 transition-all group">
             <div class="text-center">
-                <p id="fileName" class="text-slate-600 font-bold text-sm">TAP TO LOAD FILE</p>
+                <p id="fileName" class="text-slate-600 font-bold text-sm uppercase">Tap to Load File</p>
                 <p class="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-widest">PNG, JPG, PDF, VAULT</p>
             </div>
         </div>
 
         <div class="space-y-3">
             <input type="password" id="key" placeholder="Enter Secure Key"
-                class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 focus:ring-2 ring-cyan-400 outline-none font-medium transition-all text-center">
-
-            <div class="grid grid-cols-1 gap-3">
-                <button id="encryptBtn"
-                    class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-extrabold py-4 rounded-2xl shadow-lg shadow-cyan-100 active:scale-[0.98] transition-all uppercase tracking-widest text-xs">Encrypt
-                    Stream</button>
-                <button id="decryptBtn"
-                    class="w-full bg-gradient-to-r from-pink-400 to-rose-500 text-white font-extrabold py-4 rounded-2xl shadow-lg shadow-rose-100 active:scale-[0.98] transition-all uppercase tracking-widest text-xs">Decrypt
-                    Stream</button>
-            </div>
+                class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 outline-none text-center font-medium">
+            <button id="encryptBtn"
+                class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-extrabold py-4 rounded-2xl uppercase tracking-widest text-xs transition-all active:scale-95">Encrypt
+                Stream</button>
+            <button id="decryptBtn"
+                class="w-full bg-gradient-to-r from-pink-400 to-rose-500 text-white font-extrabold py-4 rounded-2xl uppercase tracking-widest text-xs transition-all active:scale-95">Decrypt
+                Stream</button>
         </div>
 
-        <!-- Terminal Output Area -->
         <div id="terminal" class="bg-slate-900 rounded-2xl p-4 h-24 overflow-y-auto hidden">
-            <p class="text-[10px] font-mono text-cyan-400 leading-relaxed" id="statusLog">> KERNEL_READY</p>
+            <p class="text-[10px] font-mono text-cyan-400" id="statusLog">> SYSTEM_READY</p>
         </div>
     </div>
 
     <script>
         let selectedFile = null;
-        const fileInput = document.getElementById('fileInput');
-        const fileNameDisplay = document.getElementById('fileName');
-        const statusLog = document.getElementById('statusLog');
-        const terminal = document.getElementById('terminal');
+        const log = (msg) => {
+            document.getElementById('terminal').classList.remove('hidden');
+            document.getElementById('statusLog').innerHTML += `<br>> ${msg}`;
+        };
 
-        function log(msg) {
-            terminal.classList.remove('hidden');
-            statusLog.innerHTML += `<br>> ${msg}`;
-            terminal.scrollTop = terminal.scrollHeight;
-        }
-
-        fileInput.addEventListener('change', (e) => {
+        document.getElementById('fileInput').onchange = (e) => {
             if (e.target.files.length > 0) {
                 selectedFile = e.target.files[0];
-                fileNameDisplay.innerText = "LOCKED: " + selectedFile.name.toUpperCase();
-                fileNameDisplay.style.color = "#00f2fe";
-                log("DATA_STREAM_CAPTURED: " + selectedFile.name);
+                document.getElementById('fileName').innerText = "LOCKED: " + selectedFile.name;
+                log("FILE_LOADED: " + selectedFile.name);
             }
-        });
+        };
 
         async function process(action) {
-            const keyInput = document.getElementById('key').value;
-            if (!selectedFile || !keyInput) {
-                alert("CRITICAL: DATA OR KEY MISSING");
-                return;
-            }
+            const key = document.getElementById('key').value;
+            if (!selectedFile || !key) return alert("MISSING DATA/KEY");
 
             log(`INITIATING_${action.toUpperCase()}...`);
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('key', keyInput);
+            const fd = new FormData();
+            fd.append('file', selectedFile);
+            fd.append('key', key);
 
             try {
-                const response = await fetch(`http://127.0.0.1:5000/${action}`, {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch(`http://127.0.0.1:5000/${action}`, { method: 'POST', body: fd });
+                if (!res.ok) throw new Error(await res.text());
 
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = action === 'encrypt' ? selectedFile.name + ".vault" : selectedFile.name.replace('.vault', '');
-                    document.body.appendChild(a);
-                    a.click();
-                    log(`${action.toUpperCase()}_SUCCESSFUL`);
-                } else {
-                    const err = await response.text();
-                    log("ERROR: " + err);
-                    alert(err);
-                }
-            } catch (error) {
-                log("CONNECTION_LOST: CHECK_BACKEND");
-                alert("SERVER ERROR: Ensure app.py is running.");
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = action === 'encrypt' ? selectedFile.name + ".vault" : selectedFile.name.replace('.vault', '');
+                a.click();
+                log(`${action.toUpperCase()}_SUCCESS`);
+            } catch (e) {
+                log("CRITICAL_ERROR: " + e.message);
+                alert(e.message);
             }
         }
 
