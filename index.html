@@ -30,7 +30,7 @@
 </head>
 
 <body class="min-h-screen flex items-center justify-center p-4">
-    <div class="glass w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl space-y-8">
+    <div class="glass w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl space-y-6">
         <div class="text-center">
             <h1
                 class="text-4xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
@@ -38,31 +38,40 @@
             <p class="text-[10px] tracking-[0.3em] font-bold text-slate-400 uppercase mt-1">Secure Neural Gateway</p>
         </div>
 
-        <!-- Hidden File Input -->
+        <!-- File Input -->
         <input type="file" id="fileInput" class="hidden">
-
         <div onclick="document.getElementById('fileInput').click()"
-            class="border-2 border-dashed border-slate-200 rounded-[2rem] p-10 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:border-cyan-400 transition-all duration-300 group">
+            class="border-2 border-dashed border-slate-200 rounded-[2rem] p-8 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:border-cyan-400 transition-all duration-300 group">
             <div
-                class="w-16 h-16 bg-cyan-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                class="w-14 h-14 bg-cyan-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
                 <svg class="w-8 h-8 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
             </div>
             <div class="text-center">
-                <p id="fileName" class="text-slate-600 font-bold">TAP TO LOAD FILE</p>
-                <p class="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-widest">PNG, JPG, PDF, BINARY
-                </p>
+                <p id="fileName" class="text-slate-600 font-bold text-sm">TAP TO LOAD FILE</p>
+                <p class="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-widest">PNG, JPG, PDF, VAULT</p>
             </div>
         </div>
 
-        <div class="space-y-4">
+        <div class="space-y-3">
             <input type="password" id="key" placeholder="Enter Secure Key"
-                class="w-full bg-slate-50 border-none rounded-2xl px-6 py-5 focus:ring-2 ring-cyan-400 outline-none font-medium transition-all text-center">
-            <button id="encryptBtn"
-                class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-extrabold py-5 rounded-2xl shadow-lg shadow-cyan-200 active:scale-[0.98] transition-all uppercase tracking-widest">Encrypt
-                Stream</button>
+                class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 focus:ring-2 ring-cyan-400 outline-none font-medium transition-all text-center">
+
+            <div class="grid grid-cols-1 gap-3">
+                <button id="encryptBtn"
+                    class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-extrabold py-4 rounded-2xl shadow-lg shadow-cyan-100 active:scale-[0.98] transition-all uppercase tracking-widest text-xs">Encrypt
+                    Stream</button>
+                <button id="decryptBtn"
+                    class="w-full bg-gradient-to-r from-pink-400 to-rose-500 text-white font-extrabold py-4 rounded-2xl shadow-lg shadow-rose-100 active:scale-[0.98] transition-all uppercase tracking-widest text-xs">Decrypt
+                    Stream</button>
+            </div>
+        </div>
+
+        <!-- Terminal Output Area -->
+        <div id="terminal" class="bg-slate-900 rounded-2xl p-4 h-24 overflow-y-auto hidden">
+            <p class="text-[10px] font-mono text-cyan-400 leading-relaxed" id="statusLog">> KERNEL_READY</p>
         </div>
     </div>
 
@@ -70,39 +79,64 @@
         let selectedFile = null;
         const fileInput = document.getElementById('fileInput');
         const fileNameDisplay = document.getElementById('fileName');
+        const statusLog = document.getElementById('statusLog');
+        const terminal = document.getElementById('terminal');
 
-        // Capture the file into memory
+        function log(msg) {
+            terminal.classList.remove('hidden');
+            statusLog.innerHTML += `<br>> ${msg}`;
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 selectedFile = e.target.files[0];
                 fileNameDisplay.innerText = "LOCKED: " + selectedFile.name.toUpperCase();
                 fileNameDisplay.style.color = "#00f2fe";
-                console.log("File captured: ", selectedFile.name);
+                log("DATA_STREAM_CAPTURED: " + selectedFile.name);
             }
         });
 
-        document.getElementById('encryptBtn').onclick = async () => {
+        async function process(action) {
             const keyInput = document.getElementById('key').value;
-
-            if (!selectedFile) {
-                alert("CRITICAL: NO DATA LOADED");
-                return;
-            }
-            if (!keyInput) {
-                alert("CRITICAL: NO KEY PROVIDED");
+            if (!selectedFile || !keyInput) {
+                alert("CRITICAL: DATA OR KEY MISSING");
                 return;
             }
 
-            // Visual feedback during "processing"
-            document.getElementById('encryptBtn').innerText = "PROCESSING...";
+            log(`INITIATING_${action.toUpperCase()}...`);
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('key', keyInput);
 
-            // This is where you'd typically send the file to your Python backend
-            // For now, we confirm the capture is ready for the Fernet stream
-            setTimeout(() => {
-                alert("SUCCESS: " + selectedFile.name + " encrypted with your secure key.");
-                document.getElementById('encryptBtn').innerText = "ENCRYPT STREAM";
-            }, 1500);
-        };
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/${action}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = action === 'encrypt' ? selectedFile.name + ".vault" : selectedFile.name.replace('.vault', '');
+                    document.body.appendChild(a);
+                    a.click();
+                    log(`${action.toUpperCase()}_SUCCESSFUL`);
+                } else {
+                    const err = await response.text();
+                    log("ERROR: " + err);
+                    alert(err);
+                }
+            } catch (error) {
+                log("CONNECTION_LOST: CHECK_BACKEND");
+                alert("SERVER ERROR: Ensure app.py is running.");
+            }
+        }
+
+        document.getElementById('encryptBtn').onclick = () => process('encrypt');
+        document.getElementById('decryptBtn').onclick = () => process('decrypt');
     </script>
 </body>
 
