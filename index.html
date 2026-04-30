@@ -4,75 +4,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAULT-X2 | Solaris Elite</title>
+    <title>VAULT-X2 | Solaris Elite UX</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&family=JetBrains+Mono&display=swap');
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f8fafc;
+            background: radial-gradient(circle at top left, #1e293b, #0f172a);
+            color: #f8fafc;
         }
 
-        .glass {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        .glass-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .drop-zone.active {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.05);
         }
     </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="glass w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl space-y-6">
-        <div class="text-center">
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <div class="glass-card w-full max-w-lg rounded-[3rem] p-10 space-y-8 relative overflow-hidden">
+        <div class="text-center space-y-2">
             <h1
-                class="text-4xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
-                VAULT-X2</h1>
-            <p class="text-[10px] tracking-[0.3em] font-bold text-slate-400 uppercase mt-1">Secure Neural Gateway</p>
+                class="text-5xl font-extrabold tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600">
+                VAULT-X2
+            </h1>
+            <div class="flex items-center justify-center gap-2">
+                <span class="h-[1px] w-8 bg-cyan-900"></span>
+                <p class="text-[10px] tracking-[0.4em] font-black text-cyan-500/50 uppercase">Solaris Elite Interface
+                </p>
+                <span class="h-[1px] w-8 bg-cyan-900"></span>
+            </div>
         </div>
 
-        <input type="file" id="fileInput" class="hidden">
-        <div onclick="document.getElementById('fileInput').click()"
-            class="border-2 border-dashed border-slate-200 rounded-[2rem] p-8 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:border-cyan-400 transition-all group">
-            <p id="fileName" class="text-slate-600 font-bold text-sm uppercase">Tap to Load File</p>
+        <!-- Enhanced Drop Zone -->
+        <div id="dropZone"
+            class="drop-zone border-2 border-dashed border-slate-700 rounded-[2.5rem] p-10 flex flex-col items-center justify-center space-y-4 cursor-pointer hover:border-cyan-500/50 transition-all group">
+            <div
+                class="w-16 h-16 bg-slate-800 rounded-3xl flex items-center justify-center group-hover:scale-110 group-hover:bg-cyan-500/10 transition-all duration-500">
+                <svg class="w-8 h-8 text-slate-500 group-hover:text-cyan-400" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+            </div>
+            <div class="text-center">
+                <p id="fileName"
+                    class="text-slate-400 font-bold text-sm tracking-tight uppercase group-hover:text-slate-200">
+                    Initialize Data Stream</p>
+                <p class="text-[9px] text-slate-600 font-bold mt-1 tracking-[0.2em]">DRAG & DROP OR TAP</p>
+            </div>
+            <input type="file" id="fileInput" class="hidden">
         </div>
 
-        <div class="space-y-3">
-            <input type="password" id="key" placeholder="Enter Secure Key"
-                class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 outline-none text-center font-medium">
-            <button id="encryptBtn"
-                class="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-extrabold py-4 rounded-2xl uppercase tracking-widest text-xs transition-all active:scale-95">Encrypt
-                Stream</button>
-            <button id="decryptBtn"
-                class="w-full bg-gradient-to-r from-pink-400 to-rose-500 text-white font-extrabold py-4 rounded-2xl uppercase tracking-widest text-xs transition-all active:scale-95">Decrypt
-                Stream</button>
+        <div class="space-y-4">
+            <div class="relative group">
+                <input type="password" id="key" placeholder="NEURAL_ACCESS_KEY"
+                    class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl px-6 py-5 outline-none focus:border-cyan-500/50 focus:ring-4 ring-cyan-500/5 font-mono text-cyan-400 placeholder-slate-600 transition-all text-center tracking-widest">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button id="encryptBtn"
+                    class="group relative overflow-hidden bg-cyan-500 text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tighter">
+                    <span class="relative z-10">Encrypt Stream</span>
+                    <div class="absolute inset-0 shimmer opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+                <button id="decryptBtn"
+                    class="group relative overflow-hidden border border-rose-500/30 text-rose-400 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tighter hover:bg-rose-500/10">
+                    Decrypt Stream
+                </button>
+            </div>
         </div>
 
-        <div id="terminal" class="bg-slate-900 rounded-2xl p-4 h-24 overflow-y-auto hidden">
-            <p class="text-[10px] font-mono text-cyan-400" id="statusLog">> KERNEL_READY</p>
+        <!-- Tactical Terminal -->
+        <div id="terminal" class="bg-black/40 border border-slate-800 rounded-3xl p-6 h-32 overflow-y-auto hidden">
+            <div class="font-mono text-[10px] space-y-1" id="statusLog">
+                <p class="text-cyan-500/50 opacity-50">>> SYSTEM_CORE_LOADED</p>
+            </div>
         </div>
     </div>
 
     <script>
         let selectedFile = null;
-        const log = (msg) => {
-            document.getElementById('terminal').classList.remove('hidden');
-            document.getElementById('statusLog').innerHTML += `<br>> ${msg}`;
+        const log = (msg, type = 'info') => {
+            const terminal = document.getElementById('terminal');
+            const logArea = document.getElementById('statusLog');
+            terminal.classList.remove('hidden');
+            const colors = { info: 'text-cyan-400', success: 'text-emerald-400', error: 'text-rose-500' };
+            logArea.innerHTML += `<p class="${colors[type]} tracking-tight">>> ${msg}</p>`;
+            terminal.scrollTop = terminal.scrollHeight;
         };
 
-        document.getElementById('fileInput').onchange = (e) => {
-            if (e.target.files.length > 0) {
-                selectedFile = e.target.files[0];
-                document.getElementById('fileName').innerText = "LOCKED: " + selectedFile.name;
-                log("FILE_LOADED: " + selectedFile.name);
-            }
-        };
+        const dz = document.getElementById('dropZone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(n => dz.addEventListener(n, e => e.preventDefault()));
+        dz.onclick = () => document.getElementById('fileInput').click();
+
+        document.getElementById('fileInput').onchange = e => handleFile(e.target.files[0]);
+        dz.ondrop = e => handleFile(e.dataTransfer.files[0]);
+
+        function handleFile(file) {
+            if (!file) return;
+            selectedFile = file;
+            document.getElementById('fileName').innerText = file.name;
+            document.getElementById('fileName').classList.add('text-cyan-400');
+            log(`FILE_CAPTURED: ${file.name.toUpperCase()}`);
+        }
 
         async function process(action) {
             const key = document.getElementById('key').value;
-            if (!selectedFile || !key) return alert("CRITICAL: MISSING DATA/KEY");
+            if (!selectedFile || !key) return log("REQUIRED: FILE + ACCESS_KEY", 'error');
 
-            log(`INITIATING_${action.toUpperCase()}...`);
+            log(`INITIATING_${action.toUpperCase()}...`, 'info');
             const fd = new FormData();
             fd.append('file', selectedFile);
             fd.append('key', key);
@@ -86,10 +152,9 @@
                 a.href = URL.createObjectURL(blob);
                 a.download = action === 'encrypt' ? selectedFile.name + ".vault" : selectedFile.name.replace('.vault', '');
                 a.click();
-                log(`${action.toUpperCase()}_SUCCESS`);
+                log(`${action.toUpperCase()}_COMPLETE`, 'success');
             } catch (e) {
-                log("CRITICAL_ERROR: Connection failed.");
-                alert("SERVER ERROR: Ensure app.py is running and you have saved the /decrypt route.");
+                log("TERMINAL_ABORT: " + e.message, 'error');
             }
         }
 
