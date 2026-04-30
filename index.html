@@ -105,7 +105,7 @@
     </div>
 
     <script>
-        // 🌓 Theme Logic
+        // 🌓 Theme Toggle Logic
         function toggleTheme() {
             const html = document.documentElement;
             const icon = document.getElementById('themeIcon');
@@ -125,7 +125,7 @@
             document.getElementById('themeIcon').innerText = '☀️';
         }
 
-        // 🧠 Core Backend Integration
+        // 🧠 Core Backend Bridge
         const API_BASE_URL = "https://vault-backend-ftsk.onrender.com/process-file";
         let selectedFile = null;
 
@@ -155,24 +155,27 @@
 
             const fd = new FormData();
             fd.append('file', selectedFile);
-            fd.append('password', password);
-            fd.append('mode', action);
+            fd.append('password', password); // Matches FastAPI 'password' param
+            fd.append('mode', action);      // Matches FastAPI 'mode' param
 
             try {
-                // Note: First request may take 50s to "wake up" Render
-                const res = await fetch(API_BASE_URL, { method: 'POST', body: fd });
+                // Warning: Free-tier Render takes ~50s to wake up on first call
+                const res = await fetch(API_BASE_URL, {
+                    method: 'POST',
+                    body: fd
+                });
 
                 if (!res.ok) {
                     const errData = await res.json();
-                    throw new Error(errData.detail || "CONNECTION_FAILED");
+                    throw new Error(errData.detail || "AUTH_FAILED");
                 }
 
                 const blob = await res.blob();
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
 
-                // Set correct download filename
-                const outName = action === 'encrypt' ? selectedFile.name + ".vx2" : selectedFile.name.replace('.vx2', '');
+                // Matches the naming logic in main.py
+                const outName = action === 'encrypt' ? `${selectedFile.name}.vx2` : selectedFile.name.replace('.vx2', '');
                 a.download = outName;
 
                 document.body.appendChild(a);
@@ -181,7 +184,7 @@
 
                 log(`${action.toUpperCase()}_SUCCESSFUL`, 'success');
             } catch (e) {
-                log("CRITICAL_FAILURE: " + e.message, 'error');
+                log("FAILURE: " + e.message, 'error');
             }
         }
 
