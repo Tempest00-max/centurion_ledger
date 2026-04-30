@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class', // Vital for the toggle to function
+            darkMode: 'class',
         }
     </script>
     <style>
@@ -19,13 +19,10 @@
             transition: background 0.5s ease;
         }
 
-        /* Specific header italic style for Dark Mode */
         .solaris-italic {
             font-style: italic;
-            tracking: tight;
         }
 
-        /* Tactical glow animation for drop zone in dark mode */
         .dark .hover-glow:hover {
             border-color: rgba(34, 211, 238, 0.5);
             box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
@@ -47,8 +44,6 @@
 
         <!-- 🌐 Dynamic Headers -->
         <div class="text-center space-y-2">
-
-            <!-- Dark Mode Header (Solaris Elite Interface) -->
             <div class="hidden dark:block">
                 <h1
                     class="text-4xl font-extrabold italic tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 solaris-italic">
@@ -57,12 +52,8 @@
                 <p class="text-[10px] tracking-[0.4em] font-black text-cyan-500/50 uppercase">Solaris Elite Interface
                 </p>
             </div>
-
-            <!-- Light Mode Header (Secure Neural Gateway) -->
             <div class="dark:hidden block">
-                <h1 class="text-4xl font-extrabold tracking-tighter text-cyan-500">
-                    VAULT-X2
-                </h1>
+                <h1 class="text-4xl font-extrabold tracking-tighter text-cyan-500">VAULT-X2</h1>
                 <p class="text-[10px] tracking-[0.3em] font-bold text-slate-400 uppercase mt-1">Secure Neural Gateway
                 </p>
             </div>
@@ -92,14 +83,11 @@
         <div class="space-y-4">
             <input type="password" id="key" placeholder="ACCESS_KEY"
                 class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-5 outline-none focus:border-cyan-500/50 font-mono text-cyan-600 dark:text-cyan-400 transition-all text-center tracking-widest uppercase text-xs">
-
             <div class="grid grid-cols-2 gap-4">
-                <!-- Encrypt Button (Tactical Style in Dark Mode) -->
                 <button id="encryptBtn"
                     class="bg-cyan-500 text-white dark:text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight hover:shadow-[0_0_20px_rgba(34,211,238,0.3)]">
                     Encrypt Stream
                 </button>
-                <!-- Decrypt Button (Hybrid: Pink in Light, Tactical Border in Dark) -->
                 <button id="decryptBtn"
                     class="bg-pink-500 text-white dark:bg-transparent dark:border dark:border-rose-500/40 dark:text-rose-400 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight hover:bg-rose-500/10">
                     Decrypt Stream
@@ -132,16 +120,15 @@
             }
         }
 
-        // Auto-detect preference on load
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
             document.getElementById('themeIcon').innerText = '☀️';
-        } else {
-            document.getElementById('themeIcon').innerText = '🌙';
         }
 
         // 🧠 Core Backend Integration
+        const API_BASE_URL = "https://vault-backend-ftsk.onrender.com/process-file";
         let selectedFile = null;
+
         const log = (msg, type = 'info') => {
             const terminal = document.getElementById('terminal');
             const logArea = document.getElementById('statusLog');
@@ -151,34 +138,51 @@
             terminal.scrollTop = terminal.scrollHeight;
         };
 
-        // File Selection Logic
         const dz = document.getElementById('dropZone');
         dz.onclick = () => document.getElementById('fileInput').click();
         document.getElementById('fileInput').onchange = e => {
             selectedFile = e.target.files[0];
             document.getElementById('fileName').innerText = selectedFile.name;
-            document.getElementById('fileName').style.color = '#00f2fe';
+            document.getElementById('fileName').style.color = '#22d3ee';
             log(`FILE_CAPTURED: ${selectedFile.name.toUpperCase()}`);
         };
 
-        // Process Encryption/Decryption
         async function process(action) {
-            const key = document.getElementById('key').value;
-            if (!selectedFile || !key) return log("ABORT: DATA_OR_KEY_MISSING", 'error');
+            const password = document.getElementById('key').value;
+            if (!selectedFile || !password) return log("ABORT: DATA_OR_KEY_MISSING", 'error');
+
             log(`INITIATING_${action.toUpperCase()}...`);
+
             const fd = new FormData();
             fd.append('file', selectedFile);
-            fd.append('key', key);
+            fd.append('password', password);
+            fd.append('mode', action);
+
             try {
-                const res = await fetch(`http://127.0.0.1:5000/${action}`, { method: 'POST', body: fd });
-                if (!res.ok) throw new Error(await res.text());
+                // Note: First request may take 50s to "wake up" Render
+                const res = await fetch(API_BASE_URL, { method: 'POST', body: fd });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.detail || "CONNECTION_FAILED");
+                }
+
                 const blob = await res.blob();
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = action === 'encrypt' ? selectedFile.name + ".vault" : selectedFile.name.replace('.vault', '');
+
+                // Set correct download filename
+                const outName = action === 'encrypt' ? selectedFile.name + ".vx2" : selectedFile.name.replace('.vx2', '');
+                a.download = outName;
+
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
+
                 log(`${action.toUpperCase()}_SUCCESSFUL`, 'success');
-            } catch (e) { log("CRITICAL_FAILURE: " + e.message, 'error'); }
+            } catch (e) {
+                log("CRITICAL_FAILURE: " + e.message, 'error');
+            }
         }
 
         document.getElementById('encryptBtn').onclick = () => process('encrypt');
