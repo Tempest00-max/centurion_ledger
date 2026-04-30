@@ -7,13 +7,9 @@ import base64
 import io
 
 app = Flask(__name__)
-CORS(app) # Vital for GitHub-to-Local communication
+CORS(app)
 
 def derive_key(password: str):
-    """
-    Stretches any password into a secure 32-byte Fernet-compatible key.
-    Salt must remain constant to ensure successful decryption later.
-    """
     salt = b'vault_x2_production_salt_2026' 
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
@@ -28,12 +24,9 @@ def encrypt_file():
     try:
         file = request.files['file']
         password = request.form['key']
-        
         secret_key = derive_key(password)
         f = Fernet(secret_key)
-        
         encrypted_data = f.encrypt(file.read())
-        
         return send_file(
             io.BytesIO(encrypted_data),
             mimetype='application/octet-stream',
@@ -41,24 +34,17 @@ def encrypt_file():
             download_name=f"{file.filename}.vault"
         )
     except Exception as e:
-        return f"ENCRYPTION_ERROR: {str(e)}", 400
+        return str(e), 400
 
 @app.route('/decrypt', methods=['POST'])
 def decrypt_file():
     try:
         file = request.files['file']
         password = request.form['key']
-        
-        # Derive the EXACT same key from the provided password
         secret_key = derive_key(password)
         f = Fernet(secret_key)
-        
-        # This will fail with a 400 error if the key is wrong
         decrypted_data = f.decrypt(file.read())
-        
-        # Cleanup the filename for the user
         original_name = file.filename.replace('.vault', '')
-        
         return send_file(
             io.BytesIO(decrypted_data),
             mimetype='application/octet-stream',
@@ -66,8 +52,7 @@ def decrypt_file():
             download_name=original_name
         )
     except Exception:
-        return "DECRYPTION_FAILED: Invalid Key or Corrupt Stream", 400
+        return "DECRYPTION_FAILED: Invalid Key or Corrupt Data", 400
 
 if __name__ == '__main__':
-    # Running on port 5000 is hardcoded into the frontend logic
     app.run(port=5000, debug=True)
