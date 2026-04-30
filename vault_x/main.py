@@ -8,7 +8,7 @@ from security import encrypt_file, decrypt_file
 
 app = FastAPI()
 
-# --- PERMISSIVE CORS ---
+# --- PERMISSIVE CORS TO ENSURE CONNECTION ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -17,15 +17,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Basic Rate Limiting to prevent brute-force attacks
+request_history = {}
+
 @app.post("/process-file")
 async def process_file(
     file: UploadFile = File(...), 
     password: str = Form(...), 
-    mode: str = Form(...) # The server MUST receive "mode"
+    action: str = Form(...) # Matches the "action" field the error says is missing
 ):
+    # Rate Limiting Logic
+    client_ip = "global_user" 
+    now = time.time()
+    if client_ip in request_history and now - request_history[client_ip] < 2:
+        raise HTTPException(status_code=429, detail="RATE_LIMIT_EXCEEDED")
+    request_history[client_ip] = now
+
     try:
         content = await file.read()
-        if mode == "encrypt":
+        
+        # Logic uses "action" to decide the path
+        if action == "encrypt":
             result = encrypt_file(content, password)
             out_name = f"{file.filename}.vx2"
         else:
@@ -38,6 +50,7 @@ async def process_file(
             headers={"Content-Disposition": f"attachment; filename={out_name}"}
         )
     except Exception:
+        # Prevent "Side-Channel" leaks by using a generic error
         raise HTTPException(status_code=401, detail="AUTHENTICATION_FAILED")
 
 if __name__ == "__main__":
