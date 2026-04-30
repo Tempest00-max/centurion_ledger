@@ -28,6 +28,8 @@
 
 <body
     class="min-h-screen flex items-center justify-center p-6 bg-[#f8fafc] dark:bg-[#0f172a] text-[#1e293b] dark:text-[#f8fafc]">
+
+    <!-- Theme Toggle -->
     <button onclick="toggleTheme()"
         class="fixed top-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 z-50">
         <span id="themeIcon" class="text-xl">🌙</span>
@@ -35,6 +37,8 @@
 
     <div
         class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[3rem] p-10 space-y-8 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
+
+        <!-- Header -->
         <div class="text-center space-y-2">
             <div class="hidden dark:block">
                 <h1
@@ -50,6 +54,7 @@
             </div>
         </div>
 
+        <!-- Drop Zone -->
         <div id="dropZone"
             class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer hover-glow transition-all duration-300 group">
             <div
@@ -69,6 +74,7 @@
             <input type="file" id="fileInput" class="hidden">
         </div>
 
+        <!-- Inputs -->
         <div class="space-y-4">
             <input type="password" id="key" placeholder="ACCESS_KEY"
                 class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-5 outline-none focus:border-cyan-500/50 font-mono text-cyan-600 dark:text-cyan-400 transition-all text-center tracking-widest uppercase text-xs">
@@ -82,6 +88,7 @@
             </div>
         </div>
 
+        <!-- Terminal -->
         <div id="terminal"
             class="bg-slate-900/10 dark:bg-black/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 h-32 overflow-y-auto hidden">
             <div class="font-mono text-[10px] space-y-1" id="statusLog">
@@ -102,6 +109,7 @@
             document.documentElement.classList.add('dark'); document.getElementById('themeIcon').innerText = '☀️';
         }
 
+        // --- CORE API CONFIG ---
         const API_BASE_URL = "https://vault-backend-ftsk.onrender.com/process-file";
         let selectedFile = null;
 
@@ -126,10 +134,11 @@
             if (!selectedFile || !pass) return log("ABORT: DATA_OR_KEY_MISSING", 'error');
 
             log(`INITIATING_${action.toUpperCase()}...`);
+
             const fd = new FormData();
             fd.append('file', selectedFile);
             fd.append('password', pass);
-            fd.append('mode', action);
+            fd.append('mode', action); // backend expects 'mode'
 
             try {
                 const res = await fetch(API_BASE_URL, { method: 'POST', body: fd });
