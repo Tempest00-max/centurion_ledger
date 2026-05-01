@@ -1,15 +1,23 @@
-# Force Sync Update: 2026-05-01 (Hybrid Gateway v2.1)
+# Force Sync Update: v2.2 (Security Hardened)
 import os
 import io
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from security import encrypt_file, decrypt_file
 
-app = FastAPI()
+# --- RATE LIMITING IMPORTS ---
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
-# Permissive CORS for GitHub Pages
+# Initialize Limiter
+limiter = Limiter(key_func=get_remote_address)
+app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,11 +33,11 @@ class TextRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    # This message confirms the backend is ready for text encryption
-    return {"status": "VAULT-X2 ONLINE", "mode": "HYBRID_GATEWAY_ACTIVE"}
+    return {"status": "VAULT-X2 ONLINE", "mode": "HYBRID_GATEWAY_ACTIVE", "protection": "RATE_LIMIT_ENABLED"}
 
 @app.post("/process-file")
-async def process_file(file: UploadFile = File(...), password: str = Form(...), action: str = Form(...)):
+@limiter.limit("5/minute")
+async def process_file(request: Request, file: UploadFile = File(...), password: str = Form(...), action: str = Form(...)):
     try:
         content = await file.read()
         if action == "encrypt":
@@ -43,20 +51,16 @@ async def process_file(file: UploadFile = File(...), password: str = Form(...), 
         raise HTTPException(status_code=401, detail="AUTHENTICATION_FAILED")
 
 @app.post("/process-text")
-async def process_text(request: TextRequest):
+@limiter.limit("5/minute")
+async def process_text(request: Request, text_req: TextRequest):
     try:
-        data = request.text.encode()
-        if request.mode == "encrypt":
-            result = encrypt_file(data, request.password)
+        data = text_req.text.encode()
+        if text_req.mode == "encrypt":
+            result = encrypt_file(data, text_req.password)
             return {"result": result.hex()}
         else:
-            # Decrypting from hex string back to readable text
-            encrypted_data = bytes.fromhex(request.text)
-            result = decrypt_file(encrypted_data, request.password)
+            encrypted_data = bytes.fromhex(text_req.text)
+            result = decrypt_file(encrypted_data, text_req.password)
             return {"result": result.decode()}
     except Exception:
-        raise HTTPException(status_code=400, detail="TRANSCODE_ERROR: Verify hex format or key")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+        raise HTTPException(status_code=400, detail="TRANSCODE_ERROR")
