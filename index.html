@@ -38,6 +38,13 @@
 
 <body
     class="min-h-screen flex items-center justify-center p-6 bg-[#f8fafc] dark:bg-[#0f172a] text-[#1e293b] dark:text-[#f8fafc]">
+
+    <!-- Restore Theme Toggle Button -->
+    <button onclick="toggleTheme()"
+        class="fixed top-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 z-50">
+        <span id="themeIcon" class="text-xl">🌙</span>
+    </button>
+
     <div
         class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[3rem] p-10 space-y-6 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
         <div class="text-center space-y-2">
@@ -61,25 +68,26 @@
                 <p class="text-[10px] font-black tracking-widest text-cyan-500 animate-pulse uppercase">Processing...
                 </p>
             </div>
-            <p id="fileName" class="text-slate-600 dark:text-slate-400 font-bold text-xs uppercase">Tap to Load File</p>
+            <p id="fileName" class="text-slate-600 dark:text-slate-400 font-bold text-xs uppercase text-center">Tap to
+                Load File</p>
             <input type="file" id="fileInput" class="hidden">
         </div>
 
         <div id="textContainer" class="hidden space-y-4 relative">
             <textarea id="textContent" placeholder="ENTER SECURE MESSAGE..."
-                class="w-full h-32 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 outline-none font-mono text-[11px] dark:text-cyan-400 resize-none"></textarea>
+                class="w-full h-32 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 outline-none font-mono text-[11px] dark:text-cyan-400 resize-none transition-all focus:border-cyan-500/50"></textarea>
             <button onclick="copyToClipboard()" id="copyBtn"
-                class="absolute top-4 right-4 bg-slate-200 dark:bg-slate-700 hover:bg-cyan-500 text-[9px] font-bold py-1 px-3 rounded-lg hidden">COPY</button>
+                class="absolute top-4 right-4 bg-slate-200 dark:bg-slate-700 hover:bg-cyan-500 hover:text-white text-[9px] font-bold py-1 px-3 rounded-lg hidden transition-colors">COPY</button>
         </div>
 
         <div class="space-y-4">
             <input type="password" id="key" placeholder="ACCESS_KEY"
-                class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-4 outline-none font-mono text-center tracking-widest text-xs uppercase">
+                class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-4 outline-none font-mono text-center tracking-widest text-xs uppercase focus:border-cyan-500/50 transition-all">
             <div class="grid grid-cols-2 gap-4">
                 <button onclick="handleProcess('encrypt')"
-                    class="bg-cyan-500 text-white font-black py-4 rounded-2xl uppercase text-[11px]">Encrypt</button>
+                    class="bg-cyan-500 text-white font-black py-4 rounded-2xl uppercase text-[11px] hover:scale-[1.02] active:scale-95 transition-all">Encrypt</button>
                 <button onclick="handleProcess('decrypt')"
-                    class="bg-pink-500 text-white font-black py-4 rounded-2xl uppercase text-[11px]">Decrypt</button>
+                    class="bg-pink-500 text-white font-black py-4 rounded-2xl uppercase text-[11px] hover:scale-[1.02] active:scale-95 transition-all">Decrypt</button>
             </div>
         </div>
 
@@ -93,6 +101,12 @@
         let currentMode = 'file';
         let selectedFile = null;
         const API_BASE = "https://vault-backend-ftsk.onrender.com";
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('themeIcon');
+            icon.innerText = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        }
 
         function switchMode(mode) {
             currentMode = mode;
@@ -139,7 +153,7 @@
                     fd.append('password', pass);
                     fd.append('action', action);
                     const res = await fetch(`${API_BASE}/process-file`, { method: 'POST', body: fd });
-                    if (!res.ok) throw new Error(await res.text());
+                    if (!res.ok) throw new Error("ENGINE_DENIED_ACCESS");
                     const blob = await res.blob();
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
@@ -153,7 +167,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ text: content, password: pass, mode: action })
                     });
-                    if (!res.ok) throw new Error("SERVER_ERROR_OR_NOT_FOUND");
+                    if (!res.ok) throw new Error("BACKEND_NOT_SYNCED_YET");
                     const data = await res.json();
                     document.getElementById('textContent').value = data.result;
                     document.getElementById('copyBtn').classList.remove('hidden');
