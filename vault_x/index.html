@@ -6,11 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VAULT-X2 | Hybrid Gateway</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class', // Vital for the toggle to function
-        }
-    </script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;800&family=JetBrains+Mono&display=swap');
 
@@ -19,16 +15,23 @@
             transition: background 0.5s ease;
         }
 
-        /* Specific header italic style for Dark Mode */
-        .solaris-italic {
-            font-style: italic;
-            tracking: tight;
+        .loader {
+            border: 3px solid rgba(34, 211, 238, 0.1);
+            border-top: 3px solid #22d3ee;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
         }
 
-        /* Tactical glow animation for drop zone in dark mode */
-        .dark .hover-glow:hover {
-            border-color: rgba(34, 211, 238, 0.5);
-            box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -36,153 +39,146 @@
 <body
     class="min-h-screen flex items-center justify-center p-6 bg-[#f8fafc] dark:bg-[#0f172a] text-[#1e293b] dark:text-[#f8fafc]">
 
-    <!-- 🌓 Theme Toggle Button -->
+    <!-- Restore Theme Toggle Button -->
     <button onclick="toggleTheme()"
         class="fixed top-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 z-50">
         <span id="themeIcon" class="text-xl">🌙</span>
     </button>
 
     <div
-        class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[3rem] p-10 space-y-8 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
-
-        <!-- 🌐 Dynamic Headers -->
+        class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[3rem] p-10 space-y-6 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
         <div class="text-center space-y-2">
-
-            <!-- Dark Mode Header (Solaris Elite Interface) -->
-            <div class="hidden dark:block">
-                <h1
-                    class="text-4xl font-extrabold italic tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 solaris-italic">
-                    VAULT-X2
-                </h1>
-                <p class="text-[10px] tracking-[0.4em] font-black text-cyan-500/50 uppercase">Solaris Elite Interface
-                </p>
-            </div>
-
-            <!-- Light Mode Header (Secure Neural Gateway) -->
-            <div class="dark:hidden block">
-                <h1 class="text-4xl font-extrabold tracking-tighter text-cyan-500">
-                    VAULT-X2
-                </h1>
-                <p class="text-[10px] tracking-[0.3em] font-bold text-slate-400 uppercase mt-1">Secure Neural Gateway
-                </p>
+            <h1
+                class="text-4xl font-extrabold italic text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-indigo-600">
+                VAULT-X2</h1>
+            <div class="flex justify-center space-x-6 mt-2">
+                <button onclick="switchMode('file')" id="fileModeBtn"
+                    class="text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1 uppercase">File
+                    Vault</button>
+                <button onclick="switchMode('text')" id="textModeBtn"
+                    class="text-[10px] font-black tracking-widest text-slate-400 pb-1 uppercase">Text Secure</button>
             </div>
         </div>
 
-        <!-- File Input Drop Zone -->
-        <div id="dropZone"
-            class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer hover-glow transition-all duration-300 group">
-            <div
-                class="w-16 h-16 bg-slate-100 dark:bg-slate-800/50 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg class="w-8 h-8 text-slate-400 dark:text-slate-500 group-hover:text-cyan-400" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
+        <div id="fileContainer"
+            class="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer group">
+            <div id="loadingOverlay"
+                class="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-[2.5rem] flex flex-col items-center justify-center hidden z-20">
+                <div class="loader mb-3"></div>
+                <p class="text-[10px] font-black tracking-widest text-cyan-500 animate-pulse uppercase">Processing...
+                </p>
             </div>
-            <div class="text-center">
-                <p id="fileName"
-                    class="text-slate-600 dark:text-slate-400 font-bold text-sm tracking-tight uppercase group-hover:text-cyan-500">
-                    Initialize Data Stream</p>
-                <p class="text-[9px] text-slate-400 dark:text-slate-600 font-bold mt-1 tracking-[0.2em]">TAP TO LOAD</p>
-            </div>
+            <p id="fileName" class="text-slate-600 dark:text-slate-400 font-bold text-xs uppercase text-center">Tap to
+                Load File</p>
             <input type="file" id="fileInput" class="hidden">
         </div>
 
-        <!-- Key Input and Hybrid Buttons -->
+        <div id="textContainer" class="hidden space-y-4 relative">
+            <textarea id="textContent" placeholder="ENTER SECURE MESSAGE..."
+                class="w-full h-32 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 outline-none font-mono text-[11px] dark:text-cyan-400 resize-none transition-all focus:border-cyan-500/50"></textarea>
+            <button onclick="copyToClipboard()" id="copyBtn"
+                class="absolute top-4 right-4 bg-slate-200 dark:bg-slate-700 hover:bg-cyan-500 hover:text-white text-[9px] font-bold py-1 px-3 rounded-lg hidden transition-colors">COPY</button>
+        </div>
+
         <div class="space-y-4">
             <input type="password" id="key" placeholder="ACCESS_KEY"
-                class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-5 outline-none focus:border-cyan-500/50 font-mono text-cyan-600 dark:text-cyan-400 transition-all text-center tracking-widest uppercase text-xs">
-
+                class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-4 outline-none font-mono text-center tracking-widest text-xs uppercase focus:border-cyan-500/50 transition-all">
             <div class="grid grid-cols-2 gap-4">
-                <!-- Encrypt Button (Tactical Style in Dark Mode) -->
-                <button id="encryptBtn"
-                    class="bg-cyan-500 text-white dark:text-slate-950 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight hover:shadow-[0_0_20px_rgba(34,211,238,0.3)]">
-                    Encrypt Stream
-                </button>
-                <!-- Decrypt Button (Hybrid: Pink in Light, Tactical Border in Dark) -->
-                <button id="decryptBtn"
-                    class="bg-pink-500 text-white dark:bg-transparent dark:border dark:border-rose-500/40 dark:text-rose-400 font-black py-5 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight hover:bg-rose-500/10">
-                    Decrypt Stream
-                </button>
+                <button onclick="handleProcess('encrypt')"
+                    class="bg-cyan-500 text-white font-black py-4 rounded-2xl uppercase text-[11px] hover:scale-[1.02] active:scale-95 transition-all">Encrypt</button>
+                <button onclick="handleProcess('decrypt')"
+                    class="bg-pink-500 text-white font-black py-4 rounded-2xl uppercase text-[11px] hover:scale-[1.02] active:scale-95 transition-all">Decrypt</button>
             </div>
         </div>
 
-        <!-- Terminal Output Area -->
         <div id="terminal"
-            class="bg-slate-900/10 dark:bg-black/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 h-32 overflow-y-auto hidden">
-            <div class="font-mono text-[10px] space-y-1" id="statusLog">
-                <p class="text-slate-400 dark:text-cyan-500/30">>> STANDBY</p>
-            </div>
+            class="bg-slate-900/10 dark:bg-black/30 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 h-24 overflow-y-auto hidden">
+            <div class="font-mono text-[10px] space-y-1" id="statusLog"></div>
         </div>
     </div>
 
     <script>
-        // 🌓 Theme Logic
-        function toggleTheme() {
-            const html = document.documentElement;
-            const icon = document.getElementById('themeIcon');
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                icon.innerText = '🌙';
-                localStorage.theme = 'light';
-            } else {
-                html.classList.add('dark');
-                icon.innerText = '☀️';
-                localStorage.theme = 'dark';
-            }
-        }
-
-        // Auto-detect preference on load
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            document.getElementById('themeIcon').innerText = '☀️';
-        } else {
-            document.getElementById('themeIcon').innerText = '🌙';
-        }
-
-        // 🧠 Core Backend Integration
+        let currentMode = 'file';
         let selectedFile = null;
+        const API_BASE = "https://vault-backend-ftsk.onrender.com";
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('themeIcon');
+            icon.innerText = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('fileContainer').classList.toggle('hidden', mode !== 'file');
+            document.getElementById('textContainer').classList.toggle('hidden', mode !== 'text');
+            document.getElementById('fileModeBtn').className = mode === 'file' ? 'text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1 uppercase' : 'text-[10px] font-black tracking-widest text-slate-400 pb-1 uppercase';
+            document.getElementById('textModeBtn').className = mode === 'text' ? 'text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1 uppercase' : 'text-[10px] font-black tracking-widest text-slate-400 pb-1 uppercase';
+        }
+
         const log = (msg, type = 'info') => {
             const terminal = document.getElementById('terminal');
-            const logArea = document.getElementById('statusLog');
             terminal.classList.remove('hidden');
-            const colors = { info: 'text-cyan-600 dark:text-cyan-400', success: 'text-emerald-500', error: 'text-rose-500' };
-            logArea.innerHTML += `<p class="${colors[type]} tracking-tight">>> ${msg}</p>`;
+            const colors = { info: 'text-cyan-400', success: 'text-emerald-500', error: 'text-rose-500' };
+            document.getElementById('statusLog').innerHTML += `<p class="${colors[type]}">>> ${msg}</p>`;
             terminal.scrollTop = terminal.scrollHeight;
         };
 
-        // File Selection Logic
-        const dz = document.getElementById('dropZone');
-        dz.onclick = () => document.getElementById('fileInput').click();
-        document.getElementById('fileInput').onchange = e => {
-            selectedFile = e.target.files[0];
-            document.getElementById('fileName').innerText = selectedFile.name;
-            document.getElementById('fileName').style.color = '#00f2fe';
-            log(`FILE_CAPTURED: ${selectedFile.name.toUpperCase()}`);
-        };
-
-        // Process Encryption/Decryption
-        async function process(action) {
-            const key = document.getElementById('key').value;
-            if (!selectedFile || !key) return log("ABORT: DATA_OR_KEY_MISSING", 'error');
-            log(`INITIATING_${action.toUpperCase()}...`);
-            const fd = new FormData();
-            fd.append('file', selectedFile);
-            fd.append('key', key);
-            try {
-                const res = await fetch(`http://127.0.0.1:5000/${action}`, { method: 'POST', body: fd });
-                if (!res.ok) throw new Error(await res.text());
-                const blob = await res.blob();
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = action === 'encrypt' ? selectedFile.name + ".vault" : selectedFile.name.replace('.vault', '');
-                a.click();
-                log(`${action.toUpperCase()}_SUCCESSFUL`, 'success');
-            } catch (e) { log("CRITICAL_FAILURE: " + e.message, 'error'); }
+        async function copyToClipboard() {
+            const text = document.getElementById('textContent').value;
+            await navigator.clipboard.writeText(text);
+            const btn = document.getElementById('copyBtn');
+            btn.innerText = "COPIED!";
+            setTimeout(() => btn.innerText = "COPY", 2000);
         }
 
-        document.getElementById('encryptBtn').onclick = () => process('encrypt');
-        document.getElementById('decryptBtn').onclick = () => process('decrypt');
+        document.getElementById('fileContainer').onclick = () => document.getElementById('fileInput').click();
+        document.getElementById('fileInput').onchange = e => {
+            selectedFile = e.target.files[0];
+            document.getElementById('fileName').innerText = selectedFile.name.toUpperCase();
+            log(`FILE_LOADED: ${selectedFile.name.toUpperCase()}`);
+        };
+
+        async function handleProcess(action) {
+            const pass = document.getElementById('key').value;
+            if (!pass) return log("ABORT: KEY_REQUIRED", 'error');
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            log(`INITIATING_${action.toUpperCase()}...`);
+
+            try {
+                if (currentMode === 'file') {
+                    if (!selectedFile) throw new Error("FILE_MISSING");
+                    const fd = new FormData();
+                    fd.append('file', selectedFile);
+                    fd.append('password', pass);
+                    fd.append('action', action);
+                    const res = await fetch(`${API_BASE}/process-file`, { method: 'POST', body: fd });
+                    if (!res.ok) throw new Error("ENGINE_DENIED_ACCESS");
+                    const blob = await res.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = action === 'encrypt' ? `${selectedFile.name}.vx2` : selectedFile.name.replace('.vx2', '');
+                    a.click();
+                } else {
+                    const content = document.getElementById('textContent').value;
+                    if (!content) throw new Error("CONTENT_MISSING");
+                    const res = await fetch(`${API_BASE}/process-text`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: content, password: pass, mode: action })
+                    });
+                    if (!res.ok) throw new Error("BACKEND_NOT_SYNCED_YET");
+                    const data = await res.json();
+                    document.getElementById('textContent').value = data.result;
+                    document.getElementById('copyBtn').classList.remove('hidden');
+                }
+                log(`${action.toUpperCase()}_SUCCESSFUL`, 'success');
+            } catch (e) {
+                log("FAILURE: " + e.message, 'error');
+            } finally {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        }
     </script>
 </body>
 
