@@ -1,3 +1,4 @@
+# Force Sync Update: 2026-05-01 (Hybrid Gateway v2.1)
 import os
 import io
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -24,6 +25,7 @@ class TextRequest(BaseModel):
 
 @app.get("/")
 async def root():
+    # This message confirms the backend is ready for text encryption
     return {"status": "VAULT-X2 ONLINE", "mode": "HYBRID_GATEWAY_ACTIVE"}
 
 @app.post("/process-file")
@@ -48,6 +50,7 @@ async def process_text(request: TextRequest):
             result = encrypt_file(data, request.password)
             return {"result": result.hex()}
         else:
+            # Decrypting from hex string back to readable text
             encrypted_data = bytes.fromhex(request.text)
             result = decrypt_file(encrypted_data, request.password)
             return {"result": result.decode()}
