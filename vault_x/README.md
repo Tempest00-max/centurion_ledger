@@ -1,19 +1,21 @@
-# VAULT-X : Secure Terminal
+# 🛡️ VAULT-X2 | Hybrid Security Gateway v2.3
 
-[cite_start]**Goal:** Build a "Security-First" Full-Stack App.
+**Goal:** Build a "Security-First" Full-Stack App that bridges local privacy with cloud-ready architecture.
 
 ### 🛠️ Technical Stack
-* [cite_start]**Backend:** FastAPI (Python)[cite: 3].
-* [cite_start]**Security:** AES-256 Encryption & PBKDF2 Key Derivation[cite: 6].
-* **Frontend:** HTML/JavaScript with real-time session tracking.
+*   **Backend:** FastAPI (Python) for high-performance, asynchronous processing.
+*   **Security:** AES-256 Encryption & PBKDF2 Key Derivation.
+*   **Protection:** Integrated **SlowAPI** for rate-limiting and brute-force mitigation.
+*   **Frontend:** HTML5/JavaScript Hybrid Engine with real-time session tracking.
 
-### 🛡️ Features
-* **Auto-Lock:** System wipes sensitive data after 30 seconds of inactivity.
-* **Stealth Mode:** Masks input for privacy.
-* **Key Rotation:** Dynamic master-key updates without server restarts.
+### 🚀 Key Features
+*   **Rate Limiting:** Automated throttling to prevent automated dictionary attacks.
+*   **Stealth Mode:** Masks sensitive inputs during the encryption process.
+*   **Hybrid Processing:** Handles both raw text and complex file structures.
+*   **Monorepo Architecture:** Streamlined project structure for professional CI/CD deployment.
 
-### 🚀 STAR Breakdown
-* **Situation:** Needed a secure way to manage encrypted data locally.
-* **Task:** Create a zero-knowledge encryption vault.
-* **Action:** Built a FastAPI backend with persistent cryptographic logic.
-* [cite_start]**Result:** A fully functional, secure-first full-stack application[cite: 30].
+### 🌟 STAR Breakdown
+*   **Situation:** Needed a secure, scalable way to manage encrypted data without risking brute-force exposure.
+*   **Task:** Create a zero-knowledge encryption vault with active server-side protection.
+*   **Action:** Developed a FastAPI backend with persistent cryptographic logic and a custom security handler.
+*   **Result:** A fully functional, secure-first full-stack application deployed on Render.
