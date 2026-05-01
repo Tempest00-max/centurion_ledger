@@ -15,15 +15,6 @@
             transition: background 0.5s ease;
         }
 
-        .solaris-italic {
-            font-style: italic;
-        }
-
-        .dark .hover-glow:hover {
-            border-color: rgba(34, 211, 238, 0.5);
-            box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
-        }
-
         .loader {
             border: 3px solid rgba(34, 211, 238, 0.1);
             border-top: 3px solid #22d3ee;
@@ -47,63 +38,48 @@
 
 <body
     class="min-h-screen flex items-center justify-center p-6 bg-[#f8fafc] dark:bg-[#0f172a] text-[#1e293b] dark:text-[#f8fafc]">
-
-    <button onclick="toggleTheme()"
-        class="fixed top-6 right-6 w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 z-50">
-        <span id="themeIcon" class="text-xl">🌙</span>
-    </button>
-
     <div
         class="bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[3rem] p-10 space-y-6 relative overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-800">
-
         <div class="text-center space-y-2">
             <h1
-                class="text-4xl font-extrabold italic tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 dark:block hidden">
+                class="text-4xl font-extrabold italic text-transparent bg-clip-text bg-gradient-to-br from-cyan-400 to-indigo-600">
                 VAULT-X2</h1>
-            <h1 class="text-4xl font-extrabold tracking-tighter text-cyan-500 dark:hidden">VAULT-X2</h1>
-
             <div class="flex justify-center space-x-6 mt-2">
                 <button onclick="switchMode('file')" id="fileModeBtn"
-                    class="text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1">FILE_VAULT</button>
+                    class="text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1 uppercase">File
+                    Vault</button>
                 <button onclick="switchMode('text')" id="textModeBtn"
-                    class="text-[10px] font-black tracking-widest text-slate-400 pb-1">TEXT_SECURE</button>
+                    class="text-[10px] font-black tracking-widest text-slate-400 pb-1 uppercase">Text Secure</button>
             </div>
         </div>
 
-        <!-- File Mode UI -->
         <div id="fileContainer"
-            class="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer hover-glow transition-all duration-300 group">
+            class="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-12 flex flex-col items-center justify-center space-y-4 cursor-pointer group">
             <div id="loadingOverlay"
                 class="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-[2.5rem] flex flex-col items-center justify-center hidden z-20">
                 <div class="loader mb-3"></div>
-                <p class="text-[10px] font-black tracking-widest text-cyan-500 animate-pulse">PROCESSING_STREAM...</p>
+                <p class="text-[10px] font-black tracking-widest text-cyan-500 animate-pulse uppercase">Processing...
+                </p>
             </div>
-            <div
-                class="w-12 h-12 bg-slate-100 dark:bg-slate-800/50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-            </div>
-            <p id="fileName" class="text-slate-600 dark:text-slate-400 font-bold text-xs uppercase">Initialize Data
-                Stream</p>
+            <p id="fileName" class="text-slate-600 dark:text-slate-400 font-bold text-xs uppercase">Tap to Load File</p>
             <input type="file" id="fileInput" class="hidden">
         </div>
 
-        <!-- Text Mode UI -->
-        <div id="textContainer" class="hidden space-y-4">
+        <div id="textContainer" class="hidden space-y-4 relative">
             <textarea id="textContent" placeholder="ENTER SECURE MESSAGE..."
-                class="w-full h-32 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 outline-none focus:border-cyan-500/50 font-mono text-[11px] text-slate-600 dark:text-cyan-400 transition-all resize-none"></textarea>
+                class="w-full h-32 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 outline-none font-mono text-[11px] dark:text-cyan-400 resize-none"></textarea>
+            <button onclick="copyToClipboard()" id="copyBtn"
+                class="absolute top-4 right-4 bg-slate-200 dark:bg-slate-700 hover:bg-cyan-500 text-[9px] font-bold py-1 px-3 rounded-lg hidden">COPY</button>
         </div>
 
         <div class="space-y-4">
             <input type="password" id="key" placeholder="ACCESS_KEY"
-                class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-cyan-500/50 font-mono text-cyan-600 dark:text-cyan-400 transition-all text-center tracking-widest uppercase text-xs">
+                class="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-4 outline-none font-mono text-center tracking-widest text-xs uppercase">
             <div class="grid grid-cols-2 gap-4">
-                <button id="encryptBtn"
-                    class="bg-cyan-500 text-white dark:text-slate-950 font-black py-4 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight disabled:opacity-50">Encrypt</button>
-                <button id="decryptBtn"
-                    class="bg-pink-500 text-white dark:bg-transparent dark:border dark:border-rose-500/40 dark:text-rose-400 font-black py-4 rounded-2xl active:scale-95 transition-all uppercase text-[11px] tracking-tight disabled:opacity-50">Decrypt</button>
+                <button onclick="handleProcess('encrypt')"
+                    class="bg-cyan-500 text-white font-black py-4 rounded-2xl uppercase text-[11px]">Encrypt</button>
+                <button onclick="handleProcess('decrypt')"
+                    class="bg-pink-500 text-white font-black py-4 rounded-2xl uppercase text-[11px]">Decrypt</button>
             </div>
         </div>
 
@@ -118,38 +94,40 @@
         let selectedFile = null;
         const API_BASE = "https://vault-backend-ftsk.onrender.com";
 
-        function toggleTheme() {
-            document.documentElement.classList.toggle('dark');
-            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        }
-
         function switchMode(mode) {
             currentMode = mode;
             document.getElementById('fileContainer').classList.toggle('hidden', mode !== 'file');
             document.getElementById('textContainer').classList.toggle('hidden', mode !== 'text');
-            document.getElementById('fileModeBtn').className = mode === 'file' ? 'text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1' : 'text-[10px] font-black tracking-widest text-slate-400 pb-1';
-            document.getElementById('textModeBtn').className = mode === 'text' ? 'text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1' : 'text-[10px] font-black tracking-widest text-slate-400 pb-1';
+            document.getElementById('fileModeBtn').className = mode === 'file' ? 'text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1 uppercase' : 'text-[10px] font-black tracking-widest text-slate-400 pb-1 uppercase';
+            document.getElementById('textModeBtn').className = mode === 'text' ? 'text-[10px] font-black tracking-widest text-cyan-500 border-b-2 border-cyan-500 pb-1 uppercase' : 'text-[10px] font-black tracking-widest text-slate-400 pb-1 uppercase';
         }
 
         const log = (msg, type = 'info') => {
             const terminal = document.getElementById('terminal');
             terminal.classList.remove('hidden');
             const colors = { info: 'text-cyan-400', success: 'text-emerald-500', error: 'text-rose-500' };
-            document.getElementById('statusLog').innerHTML += `<p class="${colors[type]} tracking-tight">>> ${msg}</p>`;
+            document.getElementById('statusLog').innerHTML += `<p class="${colors[type]}">>> ${msg}</p>`;
             terminal.scrollTop = terminal.scrollHeight;
         };
+
+        async function copyToClipboard() {
+            const text = document.getElementById('textContent').value;
+            await navigator.clipboard.writeText(text);
+            const btn = document.getElementById('copyBtn');
+            btn.innerText = "COPIED!";
+            setTimeout(() => btn.innerText = "COPY", 2000);
+        }
 
         document.getElementById('fileContainer').onclick = () => document.getElementById('fileInput').click();
         document.getElementById('fileInput').onchange = e => {
             selectedFile = e.target.files[0];
-            document.getElementById('fileName').innerText = selectedFile.name;
+            document.getElementById('fileName').innerText = selectedFile.name.toUpperCase();
             log(`FILE_LOADED: ${selectedFile.name.toUpperCase()}`);
         };
 
-        async function process(action) {
+        async function handleProcess(action) {
             const pass = document.getElementById('key').value;
-            if (!pass) return log("ABORT: ACCESS_KEY_REQUIRED", 'error');
-
+            if (!pass) return log("ABORT: KEY_REQUIRED", 'error');
             document.getElementById('loadingOverlay').classList.remove('hidden');
             log(`INITIATING_${action.toUpperCase()}...`);
 
@@ -160,7 +138,6 @@
                     fd.append('file', selectedFile);
                     fd.append('password', pass);
                     fd.append('action', action);
-
                     const res = await fetch(`${API_BASE}/process-file`, { method: 'POST', body: fd });
                     if (!res.ok) throw new Error(await res.text());
                     const blob = await res.blob();
@@ -176,9 +153,10 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ text: content, password: pass, mode: action })
                     });
-                    if (!res.ok) throw new Error(await res.text());
+                    if (!res.ok) throw new Error("SERVER_ERROR_OR_NOT_FOUND");
                     const data = await res.json();
                     document.getElementById('textContent').value = data.result;
+                    document.getElementById('copyBtn').classList.remove('hidden');
                 }
                 log(`${action.toUpperCase()}_SUCCESSFUL`, 'success');
             } catch (e) {
@@ -187,9 +165,6 @@
                 document.getElementById('loadingOverlay').classList.add('hidden');
             }
         }
-
-        document.getElementById('encryptBtn').onclick = () => process('encrypt');
-        document.getElementById('decryptBtn').onclick = () => process('decrypt');
     </script>
 </body>
 
