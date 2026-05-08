@@ -919,10 +919,42 @@
             const isHidden = input.type === 'password';
             input.type = isHidden ? 'text' : 'password';
 
-            // Update icon: eye (show) vs eye-slash (hide)
             btn.innerHTML = isHidden
                 ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>`
                 : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>`;
+        }
+
+        // ============================================
+        // UNIFIED ERROR PARSER
+        // ============================================
+
+        function parseServerError(err, fallback) {
+            let msg = fallback || 'Something went wrong. Please try again.';
+
+            if (Array.isArray(err.detail) && err.detail.length > 0) {
+                const errors = err.detail.map(e => {
+                    if (e.msg && e.loc) {
+                        const field = e.loc[e.loc.length - 1];
+                        const fieldNames = {
+                            owner_name: 'Full Name',
+                            username: 'Username',
+                            email: 'Email',
+                            password: 'Password',
+                            pin: 'Security PIN'
+                        };
+                        const niceField = fieldNames[field] || field;
+                        return `• ${niceField}: ${e.msg}`;
+                    }
+                    return `• ${e.msg || 'Invalid input'}`;
+                });
+                msg = errors.join('<br>');
+            } else if (typeof err.detail === 'string') {
+                msg = err.detail;
+            } else if (err.message) {
+                msg = err.message;
+            }
+
+            return msg;
         }
 
         // Currency configuration
@@ -970,7 +1002,6 @@
                 mainBtn.innerText = 'Authorize';
             }
 
-            // Clear shared error and pre-fill email if available
             document.getElementById('authError').classList.add('hidden');
         }
 
@@ -988,9 +1019,9 @@
 
         function showError(id, msg) {
             const el = document.getElementById(id);
-            el.innerHTML = msg;  // Use innerHTML to support <br> for multi-line errors
+            el.innerHTML = msg;
             el.classList.remove('hidden');
-            setTimeout(() => el.classList.add('hidden'), 8000);  // Longer timeout for reading
+            setTimeout(() => el.classList.add('hidden'), 8000);
         }
 
         function showToast(msg, type = 'success') {
@@ -1006,68 +1037,76 @@
         // ============================================
 
         async function processAuth() {
-            const email = document.getElementById('logEmail').value.trim();
-            const password = document.getElementById('logPass').value;
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPass').value;
 
             if (isSignup) {
                 // SIGNUP FLOW
                 const name = document.getElementById('regName').value.trim();
-                const regEmail = document.getElementById('regEmail').value.trim();
                 const username = document.getElementById('regUser').value.trim();
                 const pin = document.getElementById('regPin').value;
-                const regPass = document.getElementById('regPass').value;
 
-                // Validation
-                if (!name || !regEmail || !username || !regPass || !pin) {
-                    showError('signupError', 'All fields required');
-                    return;
+                // Client-side validation with clear messages
+                const errors = [];
+
+                if (!name) errors.push('• Full Name is required');
+                if (!email) errors.push('• Email is required');
+                if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    errors.push('• Email looks invalid. Use format: name@example.com');
                 }
-                if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
-                    showError('signupError', 'PIN must be exactly 6 digits');
-                    return;
+                if (!username) errors.push('• Username is required');
+                if (username && !/^[a-zA-Z0-9_-]+$/.test(username)) {
+                    errors.push('• Username can only contain letters, numbers, underscores (_) or hyphens (-)');
                 }
-                if (regPass.length < 8) {
-                    showError('signupError', 'Password must be 8+ characters');
-                    return;
+                if (!password) errors.push('• Password is required');
+                if (password && password.length < 8) {
+                    errors.push('• Password must be at least 8 characters');
                 }
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail)) {
-                    showError('signupError', 'Invalid email format');
+                if (!pin) errors.push('• Security PIN is required');
+                if (pin && !/^\d{6}$/.test(pin)) {
+                    errors.push('• PIN must be exactly 6 digits (numbers only)');
+                }
+
+                if (errors.length > 0) {
+                    showError('authError', errors.join('<br>'));
                     return;
                 }
 
                 const payload = {
                     owner_name: name,
                     username: username,
-                    email: regEmail
+                    email: email,
+                    password: password,
+                    pin: pin
                 };
 
                 try {
-                    const res = await fetch(
-                        `/signup?password=${encodeURIComponent(regPass)}&pin=${encodeURIComponent(pin)}`,
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        }
-                    );
+                    const res = await fetch('/signup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
                     if (res.ok) {
                         const data = await res.json();
                         showToast('✅ Account created! Please log in.');
                         toggleView();
-                        document.getElementById('logEmail').value = regEmail;
-                        document.getElementById('logPass').value = '';
+                        document.getElementById('authEmail').value = email;
+                        document.getElementById('authPass').value = '';
+                        document.getElementById('regName').value = '';
+                        document.getElementById('regUser').value = '';
+                        document.getElementById('regPin').value = '';
                     } else {
                         const err = await res.json();
-                        showError('signupError', err.detail || 'Registration failed');
+                        showError('authError', parseServerError(err, 'Registration failed'));
                     }
                 } catch (err) {
-                    showError('signupError', 'Network error. Is the server running?');
+                    showError('authError', 'Network error. Please check your connection and try again.');
                 }
             } else {
                 // LOGIN FLOW
                 if (!email || !password) {
-                    showError('loginError', 'Email and password required');
+                    showError('authError', '• Email and password are required');
                     return;
                 }
 
@@ -1086,7 +1125,6 @@
                         const data = await res.json();
                         token = data.access_token || '';
 
-                        // Store in both cookie (httponly handled by server) and localStorage backup
                         if (token) {
                             localStorage.setItem('centurion_token', token);
                         }
@@ -1094,10 +1132,10 @@
                         loadDash();
                     } else {
                         const err = await res.json();
-                        showError('loginError', err.detail || 'Invalid credentials');
+                        showError('authError', parseServerError(err, 'Invalid email or password'));
                     }
                 } catch (err) {
-                    showError('loginError', 'Network error. Is the server running?');
+                    showError('authError', 'Network error. Please check your connection and try again.');
                 }
             }
         }
@@ -1114,7 +1152,7 @@
             }
 
             if (!token) {
-                showError('loginError', 'Session expired. Please log in.');
+                showError('authError', 'Session expired. Please log in.');
                 return;
             }
 
@@ -1129,7 +1167,7 @@
                         // Token invalid, clear and redirect
                         localStorage.removeItem('centurion_token');
                         token = '';
-                        showError('loginError', 'Session expired. Please log in again.');
+                        showError('authError', 'Session expired. Please log in again.');
                         return;
                     }
                     throw new Error('Failed to load account');
@@ -1158,7 +1196,7 @@
                 showToast(`Welcome back, ${user.owner_name || 'Commander'}`);
             } catch (err) {
                 console.error('Dashboard load failed:', err);
-                showError('loginError', 'Failed to load dashboard. Please try again.');
+                showError('authError', 'Failed to load dashboard. Please try again.');
             }
         }
 
@@ -1349,8 +1387,8 @@
             document.getElementById('dashBox').classList.add('hidden');
             document.getElementById('authBox').classList.remove('hidden');
             document.getElementById('dashGuestBanner').classList.add('hidden');
-            document.getElementById('logEmail').value = '';
-            document.getElementById('logPass').value = '';
+            document.getElementById('authEmail').value = '';
+            document.getElementById('authPass').value = '';
 
             // Reset forms
             document.getElementById('authEmail').value = '';
