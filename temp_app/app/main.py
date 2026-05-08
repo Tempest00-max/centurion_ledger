@@ -277,47 +277,48 @@ async def health_check():
 @app.post("/signup")
 @limiter.limit("5/minute")
 async def signup(
-    request: Request, 
-    request_data: schemas.AccountBase, 
-    password: str = Query(...), 
-    pin: str = Query(...), 
+    request: Request,
+    data: schemas.SignupRequest,
     db: Session = Depends(get_db)
 ):
-    """Create new account with validation."""
+    """Create new account with validation. Accepts password and pin in JSON body."""
+    password = data.password
+    pin = data.pin
+
     # PIN validation
     if not pin or len(pin) != 6 or not pin.isdigit():
         raise HTTPException(status_code=400, detail="PIN must be exactly 6 digits")
-    
+
     # Password validation
     if not password or len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-    
+
     # Check existing credentials
     existing = db.query(models.Account).filter(
         or_(
-            models.Account.username == request_data.username,
-            models.Account.email == request_data.email
+            models.Account.username == data.username,
+            models.Account.email == data.email
         )
     ).first()
-    
+
     if existing:
         raise HTTPException(status_code=400, detail="Username or email already exists")
-    
+
     # Create account with default balance in NGN (base currency)
     new_user = models.Account(
-        owner_name=request_data.owner_name,
-        username=request_data.username,
-        email=request_data.email.lower(),
+        owner_name=data.owner_name,
+        username=data.username,
+        email=data.email.lower(),
         hashed_password=auth.get_password_hash(password),
         pin_hash=auth.get_pin_hash(pin),
         balance=Decimal('1562500000.00'),  # ~1M EUR in NGN
         currency='NGN'
     )
-    
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
     return {
         "status": "SUCCESS", 
         "id": str(new_user.id),
