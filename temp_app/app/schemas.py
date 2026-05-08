@@ -28,6 +28,32 @@ class AccountBase(BaseModel):
         return v.strip()
 
 
+class SignupRequest(AccountBase):
+    """Signup request that includes password and PIN in the body."""
+    password: str = Field(..., min_length=8)
+    pin: str = Field(..., min_length=6, max_length=6)
+
+    @field_validator('pin')
+    @classmethod
+    def validate_pin(cls, v):
+        if not v.isdigit():
+            raise ValueError('PIN must contain only digits')
+        return v
+
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+
+
 class Account(AccountBase):
     """Full account schema for API responses."""
     id: str
