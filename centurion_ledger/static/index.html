@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CENTURION | Tactical Ledger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        :root {
+            --bg-primary: #050810;
+            --bg-secondary: #0a0f1d;
+            --bg-card: rgba(255, 255, 255, 0.02);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --border-color: rgba(255, 255, 255, 0.05);
+            --border-accent: rgba(59, 130, 246, 0.1);
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --glass-blur: blur(20px);
+            --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.08);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f0f4f8;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.7);
+            --text-primary: #0f172a;
+            --text-secondary: rgba(15, 23, 42, 0.7);
+            --text-muted: rgba(15, 23, 42, 0.5);
+            --border-color: rgba(15, 23, 42, 0.08);
+            --border-accent: rgba(59, 130, 246, 0.15);
+            --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.12);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        .glass {
+            background: var(--bg-card);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-glow);
+            transition: all 0.4s ease;
+        }
+
+        .bal-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: space-between;
+            min-height: 240px;
+            padding: 30px;
+            border-radius: 40px;
+            border: 1px solid var(--border-accent);
+            overflow: hidden;
+        }
+
+        #balDisp {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 900;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: block;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            transition: color 0.4s ease;
+        }
+
+        #balDisp.bal-small {
+            font-size: clamp(1.1rem, 2.2vw, 1.6rem);
+            letter-spacing: -0.5px;
+        }
+
+        #balDisp.bal-tiny {
+            font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+            letter-spacing: -0.3px;
+        }
+
+        select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .tx-item {
+            transition: all 0.2s ease;
+        }
+
+        .tx-item:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .currency-select {
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            padding: 10px 28px 10px 12px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+            outline: none;
+            min-width: 70px;
+            width: 70px;
+            flex-shrink: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            border-radius: 0 10px 10px 0;
+            display: block;
+            visibility: visible;
+            opacity: 1;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+
+        .currency-select:hover {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .currency-select option {
+            background: var(--bg-secondary);
+            color: var(--accent-blue);
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .transfer-input-group {
+            display: flex;
+            align-items: stretch;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            width: 100%;
+            transition: all 0.4s ease;
+        }
+
+        .transfer-input-group input {
+            flex: 1 1 auto;
+            background: transparent;
+            border: none;
+            padding: 14px 16px;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 500;
+            min-width: 0;
+        }
+
+        .transfer-input-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* PIN Input - Professional styling */
+        .pin-input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--accent-blue);
+            padding: 14px 20px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5em;
+            text-align: center;
+            border-radius: 12px;
+            width: 100%;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .pin-input:focus {
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 0 25px rgba(59, 130, 246, 0.08);
+            background: var(--bg-secondary);
+        }
+
+        .pin-input::placeholder {
+            color: var(--text-muted);
+            font-size: 12px;
+            letter-spacing: 0.15em;
+            font-weight: 500;
+            font-family: ui-sans-serif, system-ui;
+        }
+
+        .chart-tooltip {
+            background: rgba(5, 8, 16, 0.95) !important;
+            border: 1px solid rgba(59, 130, 246, 0.3) !important;
+            border-radius: 8px !important;
+        }
+
+        .forecast-panel {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 1px solid var(--border-accent);
+            transition: all 0.4s ease;
+        }
+
+        .forecast-metric {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 16px;
+            transition: all 0.4s ease;
+        }
+
+        .forecast-metric-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .forecast-metric-value {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--accent-blue);
+        }
+
+        .forecast-recommendation {
+            background: rgba(59, 130, 246, 0.08);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 0 8px 8px 0;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .trend-up {
+            color: var(--accent-green);
+        }
+
+        .trend-down {
+            color: var(--accent-red);
+        }
+
+        .trend-stable {
+            color: #f59e0b;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-accent);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 85dvh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            transition: all 0.4s ease;
+        }
+
+        .balance-flash {
+            animation: balancePulse 0.6s ease;
+        }
+
+        @keyframes balancePulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+                color: var(--accent-green);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .tx-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tx-detail-label {
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .tx-detail-value {
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            left: 24px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            z-index: 100;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .toast-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .demo-badge {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.8;
+            }
+        }
+
+        .guest-banner {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #f59e0b;
+        }
+
+        .demo-btn {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            color: var(--accent-blue);
+            transition: all 0.2s;
+            min-height: 48px;
+        }
+
+        .demo-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .send-currency-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--accent-blue);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .send-currency-badge.hidden {
+            display: none !important;
+        }
+
+        .currency-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        /* Theme Toggle Switch */
+        .theme-toggle {
+            position: relative;
+            width: 52px;
+            height: 26px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 2px;
+            overflow: hidden;
+        }
+
+        .theme-toggle:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
+        }
+
+        .theme-toggle-slider {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border-radius: 50%;
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+        }
+
+        .theme-toggle-slider::before {
+            content: '☀';
+            font-size: 11px;
+            color: #fff;
+            line-height: 1;
+        }
+
+        [data-theme="light"] .theme-toggle-slider {
+            transform: translateX(26px);
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        [data-theme="light"] .theme-toggle-slider::before {
+            content: '☾';
+            font-size: 12px;
+        }
+
+        .theme-toggle-icons {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 6px;
+            pointer-events: none;
+            font-size: 9px;
+        }
+
+        .theme-toggle-icons span {
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Auth page inputs */
+        .auth-input {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .auth-input:focus {
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+        }
+
+        .auth-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+
+            .bal-container {
+                min-height: 180px;
+                padding: 20px;
+                border-radius: 24px;
+            }
+
+            #balDisp {
+                font-size: clamp(1.25rem, 5vw, 1.8rem);
+            }
+
+            #balDisp.bal-small {
+                font-size: clamp(1rem, 4vw, 1.4rem);
+            }
+
+            #balDisp.bal-tiny {
+                font-size: clamp(0.8rem, 3.5vw, 1.1rem);
+            }
+
+            .modal-content {
+                padding: 20px;
+                border-radius: 20px;
+                max-height: 90dvh;
+            }
+
+            .forecast-metric-value {
+                font-size: 16px;
+            }
+
+            .tx-detail-value {
+                font-size: 11px;
+            }
+
+            button,
+            .demo-btn,
+            .glass button,
+            #mainBtn,
+            #txBtn {
+                min-height: 48px;
+                min-width: 48px;
+            }
+
+            input,
+            select,
+            .currency-select,
+            .pin-input {
+                font-size: 16px !important;
+            }
+
+            .pin-input {
+                padding: 12px 16px;
+            }
+
+            .toast {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+            }
+
+            .md\:col-span-2 {
+                height: auto !important;
+                min-height: 250px;
+            }
+
+            .theme-toggle {
+                width: 48px;
+                height: 24px;
+            }
+
+            .theme-toggle-slider {
+                width: 18px;
+                height: 18px;
+            }
+
+            [data-theme="light"] .theme-toggle-slider {
+                transform: translateX(24px);
+            }
+        }
+
+        html,
+        body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
+        .modal-content {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+        }
+
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 3px;
+        }
+
+        /* Smooth transitions for all theme-affected elements */
+        .glass,
+        .forecast-panel,
+        .forecast-metric,
+        .modal-content,
+        .transfer-input-group,
+        .auth-input,
+        .pin-input,
+        .currency-select,
+        .tx-item,
+        .demo-btn {
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+        }
+    </style>
+    <base target="_blank">
+</head>
+
+<body class="min-h-screen p-6 flex flex-col items-center">
+
+    <!-- AUTH BOX -->
+    <div id="authBox" class="w-full max-w-md glass p-10 rounded-[40px] mt-10">
+        <h1 class="text-3xl font-black italic text-blue-500 text-center mb-2 uppercase">Centurion</h1>
+        <p class="text-center text-[10px] text-slate-500 mb-6 uppercase tracking-widest">Tactical Ledger System</p>
+
+        <!-- Demo Mode Banner -->
+        <div id="guestBanner" class="guest-banner rounded-xl p-3 mb-4 hidden">
+            <p class="text-[11px] font-bold text-center">👋 Welcome, Guest! Create an account or use demo credentials
+                below.</p>
+        </div>
+
+        <div id="signupGroup" class="space-y-4">
+            <input id="regName" placeholder="Full Name" class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+            <input id="regEmail" type="email" placeholder="Email Address"
+                class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+            <input id="regUser" placeholder="Username" class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+            <input id="regPass" type="password" placeholder="Password (8+ chars)"
+                class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+            <input id="regPin" type="password" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                placeholder="Security PIN (6 digits)"
+                class="w-full bg-blue-500/10 p-4 rounded-xl text-center outline-none border border-blue-500/20 text-sm font-mono tracking-[0.3em]">
+            <p id="signupError" class="text-red-400 text-[10px] font-black hidden"></p>
+        </div>
+
+        <div class="space-y-4 mt-4">
+            <input id="logEmail" type="email" placeholder="Email Address"
+                class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+            <input id="logPass" type="password" placeholder="Password"
+                class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+            <p id="loginError" class="text-red-400 text-[10px] font-black hidden"></p>
+
+            <button onclick="processAuth()" id="mainBtn"
+                class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-xs hover:bg-blue-500 transition-all">Initialize</button>
+        </div>
+
+        <!-- Demo Credentials Helper -->
+        <div id="demoHelper" class="mt-4 p-3 rounded-xl bg-white/5 border border-white/5 hidden">
+            <p class="text-[10px] text-slate-400 uppercase font-black mb-2">Demo Accounts</p>
+            <div class="space-y-2">
+                <button onclick="fillDemo('pandora_admin', 'Centurion2026!')"
+                    class="demo-btn w-full p-2 rounded-lg text-[10px] font-black text-left">
+                    🔑 Admin: pandora_admin / Centurion2026!
+                </button>
+                <button onclick="fillDemo('vault_user', 'SecureVault789')"
+                    class="demo-btn w-full p-2 rounded-lg text-[10px] font-black text-left">
+                    🔑 Vault B: vault_user / SecureVault789
+                </button>
+            </div>
+        </div>
+
+        <div class="flex gap-2 mt-6">
+            <button onclick="toggleView()"
+                class="flex-1 text-center text-[10px] font-black text-slate-500 uppercase hover:text-white transition-colors py-2">Switch
+                Mode</button>
+            <button onclick="toggleDemoHelper()"
+                class="flex-1 text-center text-[10px] font-black text-blue-500 uppercase hover:text-blue-400 transition-colors py-2">Demo
+                Accounts</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashBox" class="hidden w-full max-w-6xl space-y-8">
+        <!-- Guest Mode Banner in Dashboard -->
+        <div id="dashGuestBanner" class="guest-banner rounded-xl p-3 hidden">
+            <div class="flex justify-between items-center">
+                <p class="text-[11px] font-bold">🚀 You're viewing a demo account. All data resets periodically.</p>
+                <button onclick="logout()"
+                    class="text-[10px] font-black text-amber-500 hover:text-amber-400 uppercase">Exit Demo</button>
+            </div>
+        </div>
+
+        <div class="flex justify-between items-start flex-wrap gap-4">
+            <div>
+                <h1 class="text-4xl font-black italic text-blue-500">CENTURION</h1>
+                <div id="vId" onclick="copyId()"
+                    class="bg-blue-500/10 text-blue-400 text-[10px] font-mono px-4 py-2 rounded-full mt-3 inline-block border border-blue-500/20 cursor-pointer uppercase hover:bg-blue-500/20 transition-all">
+                    Vault ID: ...</div>
+            </div>
+            <div class="flex gap-3 items-center flex-wrap">
+                <!-- Theme Toggle -->
+                <div class="theme-toggle" onclick="toggleTheme()" title="Toggle Day/Night Mode">
+                    <div class="theme-toggle-slider"></div>
+                </div>
+                <button onclick="exportPDF()"
+                    class="glass px-5 py-2 rounded-lg text-[9px] font-black uppercase hover:bg-white/10 transition-all">Export
+                    PDF</button>
+                <button onclick="openSettings()"
+                    class="glass px-5 py-2 rounded-lg text-[9px] font-black uppercase hover:bg-white/10 transition-all">Settings</button>
+                <button onclick="logout()"
+                    class="bg-red-500/10 text-red-500 px-5 py-2 rounded-lg text-[9px] font-black uppercase hover:bg-red-500/20 transition-all">Exit</button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-3 space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- BALANCE CARD -->
+                    <div class="bal-container glass">
+                        <div class="w-full min-w-0">
+                            <p class="text-slate-500 uppercase text-[9px] font-black mb-4">Registry Liquidity</p>
+                            <h2 id="balDisp">€0.00</h2>
+                            <p id="balChange" class="text-[10px] font-black mt-2 hidden"></p>
+                            <p class="text-[9px] text-slate-600 mt-1">Base: NGN | Select currency to convert</p>
+                        </div>
+                        <select id="cur" onchange="updateCur()"
+                            class="w-full bg-[#0a0f1d] border border-white/10 rounded-xl p-3 text-[11px] font-black text-white uppercase outline-none cursor-pointer">
+                            <option value="EUR">EUR (€)</option>
+                            <option value="GBP">GBP (£)</option>
+                            <option value="USD">USD ($)</option>
+                            <option value="NGN">NGN (₦)</option>
+                        </select>
+                    </div>
+                    <!-- CHART -->
+                    <div class="md:col-span-2 glass p-8 rounded-[40px] h-[300px]"><canvas id="chart"></canvas></div>
+                </div>
+
+                <!-- RECENT ACTIVITY -->
+                <div class="glass p-8 rounded-[40px]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-black uppercase text-slate-500">Recent Activity</h3>
+                        <button onclick="loadActivity()"
+                            class="text-[9px] text-blue-400 font-black uppercase hover:text-blue-300">Refresh</button>
+                    </div>
+                    <div id="txList" class="space-y-3"></div>
+                </div>
+
+                <!-- AI FORECAST PANEL -->
+                <div class="forecast-panel glass p-8 rounded-[40px]">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-sm font-black uppercase text-blue-400">🤖 AI Forecast Engine</h3>
+                        <button onclick="loadForecast()"
+                            class="text-[9px] text-blue-400 font-black uppercase hover:text-blue-300">Generate</button>
+                    </div>
+                    <div id="forecastContent" class="space-y-4">
+                        <p class="text-slate-500 text-xs text-center py-8">Click "Generate" to unlock AI-powered
+                            financial insights</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SWIFT TRANSFER -->
+            <div class="glass p-8 rounded-[40px] h-fit sticky top-6 border border-blue-500/10">
+                <h3 class="text-2xl font-black italic mb-6 uppercase text-blue-500">Swift Transfer</h3>
+                <div class="space-y-4">
+                    <input id="targ" placeholder="ID or Email"
+                        class="w-full auth-input p-4 rounded-xl outline-none text-xs">
+
+                    <div>
+                        <p class="currency-label">Amount & Currency</p>
+                        <div class="transfer-input-group">
+                            <input id="amnt" type="number" min="0.01" step="0.01" placeholder="0.00">
+                            <select id="sendCur" class="currency-select" onchange="updateSendCurrencyLabel()">
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                                <option value="GBP">GBP</option>
+                                <option value="NGN">NGN</option>
+                            </select>
+                        </div>
+                        <div id="sendCurrencyLabel" class="send-currency-badge hidden">
+                            <span>💱 Sending</span>
+                            <span id="sendCurrencyValue">EUR</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="currency-label">Security PIN</p>
+                        <input id="pin" type="password" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                            placeholder="Enter 6-digit PIN" class="pin-input">
+                    </div>
+
+                    <p id="txError" class="text-red-400 text-[10px] font-black hidden"></p>
+                    <button onclick="runTransfer()" id="txBtn"
+                        class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 transition-all">Execute</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-black italic text-blue-500 uppercase">Vault Settings</h2>
+                <button onclick="closeSettings()" class="text-slate-500 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-500 block mb-2">Full Name</label>
+                    <input id="setName" class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-500 block mb-2">Email Address</label>
+                    <input id="setEmail" type="email" class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-500 block mb-2">New Password (min 8
+                        chars)</label>
+                    <input id="setPass" type="password" placeholder="Leave blank to keep current"
+                        class="w-full auth-input p-4 rounded-xl outline-none text-sm">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-500 block mb-2">Security PIN (6
+                        digits)</label>
+                    <input id="setPin" type="password" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                        placeholder="Leave blank to keep current" class="w-full pin-input">
+                </div>
+                <p id="settingsError" class="text-red-400 text-[10px] font-black hidden"></p>
+                <button onclick="saveSettings()"
+                    class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-xs hover:bg-blue-500 transition-all mt-4">Update
+                    Credentials</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TX DETAIL MODAL -->
+    <div id="txModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-black italic text-blue-500 uppercase">Transaction Details</h2>
+                <button onclick="closeTxModal()" class="text-slate-500 hover:text-white text-xl">&times;</button>
+            </div>
+            <div id="txDetailContent" class="space-y-1"></div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ============================================
+        // CENTURION TACTICAL LEDGER - FRONTEND ENGINE
+        // Portfolio-ready: bulletproof auth, demo mode, fixed chart math
+        // ============================================
+
+        let isSignup = true;
+        let token = "";
+        let user = null;
+        let chart = null;
+        let txData = [];
+        let lastBalance = 0;
+        let balanceRefreshInterval = null;
+        let isGuest = false;
+
+        // Currency configuration
+        const RATES = { NGN: 1, USD: 0.00069, EUR: 0.00064, GBP: 0.00055 };
+        const SYMBOLS = { NGN: '₦', USD: '$', EUR: '€', GBP: '£' };
+
+        // ============================================
+        // THEME TOGGLE
+        // ============================================
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('centurion_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('centurion_theme', next);
+
+            // Re-render chart with updated colors if it exists
+            if (chart) {
+                loadActivity();
+            }
+        }
+
+        // Initialize theme on load
+        initTheme();
+
+        // ============================================
+        // AUTH & UI HELPERS
+        // ============================================
+
+        function toggleView() {
+            isSignup = !isSignup;
+            const signupGroup = document.getElementById('signupGroup');
+            const mainBtn = document.getElementById('mainBtn');
+
+            if (isSignup) {
+                signupGroup.classList.remove('hidden');
+                mainBtn.innerText = 'Initialize';
+            } else {
+                signupGroup.classList.add('hidden');
+                mainBtn.innerText = 'Authorize';
+            }
+
+            document.getElementById('signupError').classList.add('hidden');
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        function toggleDemoHelper() {
+            const helper = document.getElementById('demoHelper');
+            helper.classList.toggle('hidden');
+        }
+
+        function fillDemo(username, password) {
+            document.getElementById('logEmail').value = username;
+            document.getElementById('logPass').value = password;
+            if (isSignup) toggleView();
+            document.getElementById('demoHelper').classList.add('hidden');
+        }
+
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.innerText = msg;
+            el.classList.remove('hidden');
+            setTimeout(() => el.classList.add('hidden'), 5000);
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.className = `toast toast-${type}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
+
+        async function processAuth() {
+            const email = document.getElementById('logEmail').value.trim();
+            const password = document.getElementById('logPass').value;
+
+            if (isSignup) {
+                // SIGNUP FLOW
+                const name = document.getElementById('regName').value.trim();
+                const regEmail = document.getElementById('regEmail').value.trim();
+                const username = document.getElementById('regUser').value.trim();
+                const pin = document.getElementById('regPin').value;
+                const regPass = document.getElementById('regPass').value;
+
+                // Validation
+                if (!name || !regEmail || !username || !regPass || !pin) {
+                    showError('signupError', 'All fields required');
+                    return;
+                }
+                if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+                    showError('signupError', 'PIN must be exactly 6 digits');
+                    return;
+                }
+                if (regPass.length < 8) {
+                    showError('signupError', 'Password must be 8+ characters');
+                    return;
+                }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail)) {
+                    showError('signupError', 'Invalid email format');
+                    return;
+                }
+
+                const payload = {
+                    owner_name: name,
+                    username: username,
+                    email: regEmail
+                };
+
+                try {
+                    const res = await fetch(
+                        `/signup?password=${encodeURIComponent(regPass)}&pin=${encodeURIComponent(pin)}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        }
+                    );
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        showToast('✅ Account created! Please log in.');
+                        toggleView();
+                        document.getElementById('logEmail').value = regEmail;
+                        document.getElementById('logPass').value = '';
+                    } else {
+                        const err = await res.json();
+                        showError('signupError', err.detail || 'Registration failed');
+                    }
+                } catch (err) {
+                    showError('signupError', 'Network error. Is the server running?');
+                }
+            } else {
+                // LOGIN FLOW
+                if (!email || !password) {
+                    showError('loginError', 'Email and password required');
+                    return;
+                }
+
+                try {
+                    const formData = new URLSearchParams();
+                    formData.append('username', email);
+                    formData.append('password', password);
+
+                    const res = await fetch('/token', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        token = data.access_token || '';
+
+                        // Store in both cookie (httponly handled by server) and localStorage backup
+                        if (token) {
+                            localStorage.setItem('centurion_token', token);
+                        }
+
+                        loadDash();
+                    } else {
+                        const err = await res.json();
+                        showError('loginError', err.detail || 'Invalid credentials');
+                    }
+                } catch (err) {
+                    showError('loginError', 'Network error. Is the server running?');
+                }
+            }
+        }
+
+        // ============================================
+        // DASHBOARD LOADING
+        // ============================================
+
+        async function loadDash() {
+            // Try localStorage token first (for page refreshes), then cookie
+            const storedToken = localStorage.getItem('centurion_token');
+            if (storedToken && !token) {
+                token = storedToken;
+            }
+
+            if (!token) {
+                showError('loginError', 'Session expired. Please log in.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/accounts/me', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    credentials: 'include'
+                });
+
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        // Token invalid, clear and redirect
+                        localStorage.removeItem('centurion_token');
+                        token = '';
+                        showError('loginError', 'Session expired. Please log in again.');
+                        return;
+                    }
+                    throw new Error('Failed to load account');
+                }
+
+                user = await res.json();
+
+                // Show dashboard
+                document.getElementById('authBox').classList.add('hidden');
+                document.getElementById('dashBox').classList.remove('hidden');
+
+                // Show guest banner if using demo account
+                const demoEmails = ['otolulope635@gmail.com', 'vault@projectpandora.com'];
+                if (demoEmails.includes(user.email)) {
+                    document.getElementById('dashGuestBanner').classList.remove('hidden');
+                }
+
+                document.getElementById('vId').innerText = `Vault ID: ${user.id}`;
+                lastBalance = parseFloat(user.balance) || 0;
+
+                updateCur();
+                loadActivity();
+                loadForecast();
+                startBalancePolling();
+
+                showToast(`Welcome back, ${user.owner_name || 'Commander'}`);
+            } catch (err) {
+                console.error('Dashboard load failed:', err);
+                showError('loginError', 'Failed to load dashboard. Please try again.');
+            }
+        }
+
+        // ============================================
+        // BALANCE POLLING
+        // ============================================
+
+        function startBalancePolling() {
+            if (balanceRefreshInterval) clearInterval(balanceRefreshInterval);
+
+            balanceRefreshInterval = setInterval(async () => {
+                if (!token) return;
+
+                try {
+                    const res = await fetch('/accounts/me', {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        credentials: 'include'
+                    });
+
+                    if (!res.ok) return;
+
+                    const freshUser = await res.json();
+                    const newBalance = parseFloat(freshUser.balance) || 0;
+
+                    if (Math.abs(newBalance - lastBalance) > 0.01) {
+                        const oldBalance = lastBalance;
+                        user = freshUser;
+                        lastBalance = newBalance;
+                        updateCur();
+
+                        const changeEl = document.getElementById('balChange');
+                        const diff = newBalance - oldBalance;
+                        const sign = diff >= 0 ? '▲ +' : '▼ ';
+                        const absDiff = Math.abs(diff).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                        changeEl.innerText = `${sign}${absDiff}`;
+                        changeEl.className = `text-[10px] font-black mt-2 ${diff >= 0 ? 'text-green-400' : 'text-red-400'}`;
+                        changeEl.classList.remove('hidden');
+
+                        document.getElementById('balDisp').classList.add('balance-flash');
+
+                        setTimeout(() => {
+                            document.getElementById('balDisp').classList.remove('balance-flash');
+                            changeEl.classList.add('hidden');
+                        }, 2000);
+
+                        loadActivity();
+                    }
+                } catch (e) {
+                    // Silent fail on polling error
+                }
+            }, 10000);
+        }
+
+        function stopBalancePolling() {
+            if (balanceRefreshInterval) {
+                clearInterval(balanceRefreshInterval);
+                balanceRefreshInterval = null;
+            }
+        }
+
+        // ============================================
+        // SETTINGS
+        // ============================================
+
+        function openSettings() {
+            if (!user) return;
+            document.getElementById('setName').value = user.owner_name || '';
+            document.getElementById('setEmail').value = user.email || '';
+            document.getElementById('setPass').value = '';
+            document.getElementById('setPin').value = '';
+            document.getElementById('settingsError').classList.add('hidden');
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        async function saveSettings() {
+            const name = document.getElementById('setName').value.trim();
+            const email = document.getElementById('setEmail').value.trim();
+            const password = document.getElementById('setPass').value;
+            const pin = document.getElementById('setPin').value;
+
+            const payload = {};
+            if (name) payload.owner_name = name;
+            if (email) payload.email = email;
+
+            if (password) {
+                if (password.length < 8) {
+                    showError('settingsError', 'Password must be 8+ characters');
+                    return;
+                }
+                payload.password = password;
+            }
+
+            if (pin) {
+                if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+                    showError('settingsError', 'PIN must be exactly 6 digits');
+                    return;
+                }
+                payload.pin = pin;
+            }
+
+            if (Object.keys(payload).length === 0) {
+                closeSettings();
+                return;
+            }
+
+            try {
+                const res = await fetch('/accounts/update', {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload),
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    showToast('✅ Credentials Updated Successfully');
+
+                    // Refresh user data
+                    const meRes = await fetch('/accounts/me', {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        credentials: 'include'
+                    });
+
+                    if (meRes.ok) {
+                        user = await meRes.json();
+                        document.getElementById('vId').innerText = `Vault ID: ${user.id}`;
+                        updateCur();
+                    }
+
+                    closeSettings();
+                } else {
+                    const err = await res.json();
+                    showError('settingsError', err.detail || 'Update failed');
+                }
+            } catch (err) {
+                showError('settingsError', 'Network error');
+            }
+        }
+
+        function copyId() {
+            if (!user || !user.id) return;
+
+            navigator.clipboard.writeText(user.id).then(() => {
+                const el = document.getElementById('vId');
+                const orig = el.innerText;
+                el.innerText = "COPIED TO CLIPBOARD!";
+                el.classList.add('text-green-400');
+
+                setTimeout(() => {
+                    el.innerText = orig;
+                    el.classList.remove('text-green-400');
+                }, 1500);
+            }).catch(() => {
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        // ============================================
+        // LOGOUT
+        // ============================================
+
+        async function logout() {
+            stopBalancePolling();
+
+            try {
+                await fetch('/logout', { method: 'POST', credentials: 'include' });
+            } catch (e) {
+                // Ignore logout errors
+            }
+
+            // Clear all auth state
+            token = "";
+            user = null;
+            localStorage.removeItem('centurion_token');
+
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+
+            document.getElementById('dashBox').classList.add('hidden');
+            document.getElementById('authBox').classList.remove('hidden');
+            document.getElementById('dashGuestBanner').classList.add('hidden');
+            document.getElementById('logEmail').value = '';
+            document.getElementById('logPass').value = '';
+
+            // Reset forms
+            document.getElementById('regName').value = '';
+            document.getElementById('regEmail').value = '';
+            document.getElementById('regUser').value = '';
+            document.getElementById('regPass').value = '';
+            document.getElementById('regPin').value = '';
+        }
+
+        // ============================================
+        // BALANCE & CURRENCY
+        // ============================================
+
+        function formatBalance(value, symbol) {
+            const absVal = Math.abs(value);
+            const str = value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const fullStr = `${symbol}${str}`;
+
+            // If the string is too long, use compact notation
+            if (fullStr.length > 18) {
+                if (absVal >= 1000000000) {
+                    return `${symbol}${(value / 1000000000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}B`;
+                }
+                if (absVal >= 1000000) {
+                    return `${symbol}${(value / 1000000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`;
+                }
+                if (absVal >= 1000) {
+                    return `${symbol}${(value / 1000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}K`;
+                }
+            }
+
+            return fullStr;
+        }
+
+        function updateCur() {
+            if (!user) return;
+
+            const currency = document.getElementById('cur').value;
+            const rate = RATES[currency] || 0.00064;
+            const symbol = SYMBOLS[currency] || '€';
+
+            // Convert from base NGN to selected currency
+            const converted = lastBalance * rate;
+
+            const balDisp = document.getElementById('balDisp');
+            balDisp.innerText = formatBalance(converted, symbol);
+
+            // Adjust font size class based on string length
+            const textLength = balDisp.innerText.length;
+            balDisp.classList.remove('bal-small', 'bal-tiny');
+            if (textLength > 20) {
+                balDisp.classList.add('bal-tiny');
+            } else if (textLength > 14) {
+                balDisp.classList.add('bal-small');
+            }
+        }
+
+        // ============================================
+        // SEND CURRENCY LABEL
+        // ============================================
+
+        function updateSendCurrencyLabel() {
+            const currency = document.getElementById('sendCur').value;
+            const label = document.getElementById('sendCurrencyLabel');
+            const value = document.getElementById('sendCurrencyValue');
+
+            value.innerText = currency;
+            label.classList.remove('hidden');
+        }
+
+        // ============================================
+        // TRANSFER
+        // ============================================
+
+        async function runTransfer() {
+            const target = document.getElementById('targ').value.trim();
+            const amount = parseFloat(document.getElementById('amnt').value);
+            const pin = document.getElementById('pin').value;
+            const currency = document.getElementById('sendCur').value;
+
+            // Validation
+            if (!target || !amount || !pin) {
+                showError('txError', 'All fields required');
+                return;
+            }
+            if (isNaN(amount) || amount <= 0) {
+                showError('txError', 'Amount must be positive');
+                return;
+            }
+            if (amount > 100000000) {
+                showError('txError', 'Amount exceeds maximum (100M)');
+                return;
+            }
+            if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+                showError('txError', 'PIN must be 6 digits');
+                return;
+            }
+
+            const btn = document.getElementById('txBtn');
+            btn.classList.add('loading');
+            btn.innerText = 'Processing...';
+
+            const idempotencyKey = crypto.randomUUID();
+
+            try {
+                const res = await fetch(
+                    `/transfer/?target=${encodeURIComponent(target)}&amount=${amount}&currency=${currency}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'X-Pin': pin,
+                            'Idempotency-Key': idempotencyKey,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    }
+                );
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const symbol = SYMBOLS[data.currency] || data.currency;
+                    showToast(`✅ Sent ${symbol}${data.amount_sent} ${data.currency} to ${data.receiver_name}`);
+
+                    // Clear form
+                    document.getElementById('targ').value = '';
+                    document.getElementById('amnt').value = '';
+                    document.getElementById('pin').value = '';
+                    document.getElementById('sendCurrencyLabel').classList.add('hidden');
+
+                    // Update balance immediately
+                    if (data.sender_balance !== undefined) {
+                        user.balance = data.sender_balance;
+                        lastBalance = parseFloat(data.sender_balance);
+                        updateCur();
+                    }
+
+                    loadActivity();
+                    loadForecast();
+                } else {
+                    const err = await res.json();
+                    const detail = err.detail || 'Transfer Rejected';
+
+                    if (detail.toLowerCase().includes('locked')) {
+                        showError('txError', 'Account locked. Wait 30 minutes.');
+                    } else if (detail.toLowerCase().includes('insufficient')) {
+                        showError('txError', 'Insufficient balance.');
+                    } else if (detail.toLowerCase().includes('not found')) {
+                        showError('txError', 'Target account not found.');
+                    } else {
+                        showError('txError', detail);
+                    }
+                }
+            } catch (err) {
+                showError('txError', 'Network error. Please try again.');
+            } finally {
+                btn.classList.remove('loading');
+                btn.innerText = 'Execute';
+            }
+        }
+
+        // ============================================
+        // ACTIVITY / TRANSACTIONS
+        // ============================================
+
+        async function loadActivity() {
+            if (!token) return;
+
+            try {
+                const res = await fetch('/transactions/?limit=50', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    credentials: 'include'
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed to load transactions');
+                }
+
+                const txs = await res.json();
+                txData = txs || [];
+
+                const list = document.getElementById('txList');
+
+                if (!txs || txs.length === 0) {
+                    list.innerHTML = '<p class="text-slate-600 text-xs text-center py-4">No transactions yet</p>';
+                    renderChart([]);
+                    return;
+                }
+
+                list.innerHTML = txs.map((t, idx) => {
+                    const isCredit = t.type === 'CREDIT';
+                    const sign = isCredit ? '+' : '-';
+                    const color = isCredit ? 'text-green-400' : 'text-red-400';
+                    const typeLabel = isCredit ? 'CREDIT' : 'DEBIT';
+                    const badgeClass = isCredit ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400';
+
+                    const date = t.created_at
+                        ? new Date(t.created_at).toLocaleString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                        })
+                        : 'N/A';
+
+                    const counterparty = t.counterparty_name || 'Unknown';
+                    const cpEmail = t.counterparty_email || 'Unknown';
+                    const curr = t.currency || 'NGN';
+                    const symbol = SYMBOLS[curr] || curr;
+                    const signature = t.signature || `TX-${(t.id || '').slice(0, 8).toUpperCase()}`;
+
+                    return `
+                        <div class="tx-item flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5 cursor-pointer" onclick="showTxDetail(${idx})">
+                            <div class="flex flex-col gap-1 flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <p class="font-black ${color} text-sm">${sign}${symbol}${(t.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} <span class="text-[9px] text-slate-500">${curr}</span></p>
+                                    <span class="text-[8px] px-2 py-0.5 rounded-full ${badgeClass} font-black uppercase">${typeLabel}</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 font-medium truncate">${counterparty} <span class="text-slate-600">&bull; ${cpEmail}</span></p>
+                                <p class="text-[9px] text-slate-600 font-mono">${signature}</p>
+                            </div>
+                            <div class="text-right ml-4 flex-shrink-0">
+                                <p class="text-[9px] font-mono text-slate-500">${date}</p>
+                                <p class="text-[8px] text-slate-600 mt-1">ID: ${(t.id || '').slice(0, 8)}...</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                renderChart(txs);
+            } catch (err) {
+                document.getElementById('txList').innerHTML =
+                    `<p class="text-red-400 text-xs text-center py-4">${err.message || 'Failed to load activity'}</p>`;
+                renderChart([]);
+            }
+        }
+
+        function showTxDetail(idx) {
+            const t = txData[idx];
+            if (!t) return;
+
+            const isCredit = t.type === 'CREDIT';
+            const content = document.getElementById('txDetailContent');
+            const curr = t.currency || 'NGN';
+            const symbol = SYMBOLS[curr] || curr;
+
+            const date = t.created_at
+                ? new Date(t.created_at).toLocaleString('en-US', {
+                    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                })
+                : 'N/A';
+
+            content.innerHTML = `
+                <div class="text-center mb-4">
+                    <p class="text-2xl font-black ${isCredit ? 'text-green-400' : 'text-red-400'}">
+                        ${isCredit ? '+' : '-'}${symbol}${(t.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} ${curr}
+                    </p>
+                    <span class="text-[10px] px-3 py-1 rounded-full ${isCredit ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'} font-black uppercase mt-2 inline-block">
+                        ${t.type}
+                    </span>
+                </div>
+                <div class="space-y-1">
+                    <div class="tx-detail-row">
+                        <span class="tx-detail-label">Transaction ID</span>
+                        <span class="tx-detail-value font-mono">${t.id || 'N/A'}</span>
+                    </div>
+                    <div class="tx-detail-row">
+                        <span class="tx-detail-label">Date & Time</span>
+                        <span class="tx-detail-value">${date}</span>
+                    </div>
+                    <div class="tx-detail-row">
+                        <span class="tx-detail-label">Status</span>
+                        <span class="tx-detail-value ${t.status === 'COMPLETED' ? 'text-green-400' : 'text-yellow-400'}">${t.status || 'PENDING'}</span>
+                    </div>
+                    <div class="tx-detail-row">
+                        <span class="tx-detail-label">Signature</span>
+                        <span class="tx-detail-value font-mono">${t.signature || 'N/A'}</span>
+                    </div>
+                    <div class="tx-detail-row">
+                        <span class="tx-detail-label">${isCredit ? 'From' : 'To'}</span>
+                        <span class="tx-detail-value">${t.counterparty_name || 'Unknown'}</span>
+                    </div>
+                    <div class="tx-detail-row">
+                        <span class="tx-detail-label">Email</span>
+                        <span class="tx-detail-value">${t.counterparty_email || 'Unknown'}</span>
+                    </div>
+                    <div class="tx-detail-row">
+                        <span class="tx-detail-label">${isCredit ? 'From' : 'To'} ID</span>
+                        <span class="tx-detail-value font-mono">${t.counterparty_id || 'Unknown'}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('txModal').classList.add('active');
+        }
+
+        function closeTxModal() {
+            document.getElementById('txModal').classList.remove('active');
+        }
+
+        // ============================================
+        // PDF EXPORT
+        // ============================================
+
+        async function exportPDF() {
+            if (!token) {
+                showToast('Please log in first', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/transactions/export?format=pdf', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    credentials: 'include'
+                });
+
+                if (!res.ok) throw new Error('Export failed');
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `centurion_ledger_${new Date().toISOString().slice(0, 10)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                showToast('✅ PDF exported successfully');
+            } catch (err) {
+                showToast('Export failed: ' + err.message, 'error');
+            }
+        }
+
+        // ============================================
+        // AI FORECAST
+        // ============================================
+
+        async function loadForecast() {
+            if (!token) return;
+
+            const container = document.getElementById('forecastContent');
+            container.innerHTML = '<p class="text-slate-500 text-xs text-center py-8">🔄 Analyzing your financial patterns...</p>';
+
+            try {
+                const res = await fetch('/forecast/', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    credentials: 'include'
+                });
+
+                if (!res.ok) throw new Error('Forecast failed');
+
+                const data = await res.json();
+                let html = '';
+
+                // Insights Grid
+                if (data.insights && data.insights.length > 0) {
+                    html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">';
+                    data.insights.forEach(insight => {
+                        // Parse emoji + label + value format: "📊 Total Transactions: 6"
+                        const cleanInsight = insight.replace(/^[^\w\s]+/, '').trim();
+                        const colonIdx = cleanInsight.indexOf(':');
+                        const label = colonIdx > 0 ? cleanInsight.slice(0, colonIdx).trim() : cleanInsight;
+                        const value = colonIdx > 0 ? cleanInsight.slice(colonIdx + 1).trim() : '';
+
+                        html += `
+                            <div class="forecast-metric">
+                                <div class="forecast-metric-label">${label}</div>
+                                <div class="forecast-metric-value">${value || insight}</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+
+                // 30-Day Projection
+                if (data.prediction) {
+                    const trend = data.prediction.trend || 'INSUFFICIENT_DATA';
+                    const trendClass = trend === 'INCREASING' ? 'trend-up' :
+                        trend === 'DECREASING' ? 'trend-down' : 'trend-stable';
+
+                    html += `
+                        <div class="glass p-4 rounded-2xl mb-4 border border-blue-500/10">
+                            <h4 class="text-[10px] font-black uppercase text-blue-400 mb-3">📊 30-Day Projection</h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="forecast-metric">
+                                    <div class="forecast-metric-label">Predicted Outflow</div>
+                                    <div class="forecast-metric-value">
+                                        ${(data.prediction.predicted_monthly_outflow || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                    </div>
+                                </div>
+                                <div class="forecast-metric">
+                                    <div class="forecast-metric-label">Trend Direction</div>
+                                    <div class="forecast-metric-value ${trendClass}">${trend}</div>
+                                </div>
+                                <div class="forecast-metric">
+                                    <div class="forecast-metric-label">Confidence</div>
+                                    <div class="forecast-metric-value">${data.prediction.confidence || 'LOW'}</div>
+                                </div>
+                                <div class="forecast-metric">
+                                    <div class="forecast-metric-label">Currencies</div>
+                                    <div class="forecast-metric-value">
+                                        ${Object.keys(data.prediction.currency_breakdown || {}).length}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Recommendations
+                if (data.recommendations && data.recommendations.length > 0) {
+                    html += '<h4 class="text-[10px] font-black uppercase text-blue-400 mb-2">💡 Smart Recommendations</h4>';
+                    data.recommendations.forEach(rec => {
+                        html += `<div class="forecast-recommendation">${rec}</div>`;
+                    });
+                }
+
+                container.innerHTML = html || '<p class="text-slate-500 text-xs text-center py-4">No forecast data available</p>';
+            } catch (err) {
+                container.innerHTML = `<p class="text-red-400 text-xs text-center py-4">Forecast unavailable: ${err.message}</p>`;
+            }
+        }
+
+        // ============================================
+        // CHART - FIXED BALANCE HISTORY MATH
+        // ============================================
+
+        function renderChart(txs) {
+            const ctx = document.getElementById('chart').getContext('2d');
+            if (chart) chart.destroy();
+
+            let labels = [], dataPoints = [], annotations = [];
+
+            if (txs && txs.length > 0) {
+                // Sort chronologically oldest first
+                const sorted = [...txs].sort((a, b) => {
+                    const da = a.created_at ? new Date(a.created_at) : new Date(0);
+                    const db = b.created_at ? new Date(b.created_at) : new Date(0);
+                    return da - db;
+                });
+
+                // Take last 15 for chart
+                const recent = sorted.slice(-15);
+
+                // Calculate running balance forward from a starting point
+                // We work backwards: start from current balance, reverse transactions
+                let runningBal = lastBalance;
+
+                // Build from newest to oldest (reverse of display order)
+                const reversed = [...recent].reverse();
+
+                for (let i = 0; i < reversed.length; i++) {
+                    const t = reversed[i];
+                    const isCredit = t.type === 'CREDIT';
+
+                    // Add point (current balance after this transaction)
+                    dataPoints.unshift(runningBal);
+                    annotations.unshift({
+                        type: isCredit ? 'CREDIT' : 'DEBIT',
+                        amount: t.amount || 0,
+                        currency: t.currency || 'NGN',
+                        counterparty: t.counterparty_name || 'Unknown',
+                        email: t.counterparty_email || 'Unknown'
+                    });
+
+                    // Reverse the transaction to get previous balance
+                    // Credit increased balance, so previous was lower
+                    // Debit decreased balance, so previous was higher
+                    if (isCredit) {
+                        runningBal -= (t.amount || 0);
+                    } else {
+                        runningBal += (t.amount || 0);
+                    }
+                }
+
+                // Add starting point
+                dataPoints.unshift(Math.max(0, runningBal));
+                annotations.unshift(null);
+
+                labels.push('Start');
+                recent.forEach(t => {
+                    const d = t.created_at ? new Date(t.created_at) : new Date();
+                    labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                });
+            } else {
+                // No transactions - show flat line at current balance
+                labels = ['Start', 'Now'];
+                dataPoints = [lastBalance, lastBalance];
+                annotations = [null, null];
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Balance Trend',
+                        data: dataPoints,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#050810',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(5, 8, 16, 0.95)',
+                            titleColor: '#3b82f6',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(59, 130, 246, 0.3)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                title: function (context) {
+                                    const idx = context[0].dataIndex;
+                                    const ann = annotations[idx];
+                                    if (ann && idx > 0) {
+                                        return `${ann.type}: ${(ann.amount || 0).toLocaleString()} ${ann.currency}`;
+                                    }
+                                    return context[0].label || 'Start';
+                                },
+                                label: function (context) {
+                                    const idx = context.dataIndex;
+                                    const ann = annotations[idx];
+                                    const val = context.parsed?.y || 0;
+
+                                    let lines = [`Balance: ₦${val.toLocaleString(undefined, { minimumFractionDigits: 2 })}`];
+                                    if (ann && idx > 0) {
+                                        lines.push(`To/From: ${ann.counterparty}`);
+                                        lines.push(`Email: ${ann.email}`);
+                                    }
+                                    return lines;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 9 } },
+                            grid: { color: 'rgba(255,255,255,0.03)' }
+                        },
+                        y: {
+                            display: true,
+                            ticks: {
+                                color: 'rgba(255,255,255,0.3)',
+                                font: { size: 9 },
+                                callback: function (value) {
+                                    const absVal = Math.abs(value);
+                                    if (absVal >= 1000000000) return '₦' + (absVal / 1000000000).toFixed(2) + 'B';
+                                    if (absVal >= 1000000) return '₦' + (absVal / 1000000).toFixed(2) + 'M';
+                                    if (absVal >= 1000) return '₦' + (absVal / 1000).toFixed(1) + 'K';
+                                    return '₦' + absVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                                }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.03)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ============================================
+        // EVENT LISTENERS & INIT
+        // ============================================
+
+        // Close modals on overlay click
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) {
+                e.target.classList.remove('active');
+            }
+        });
+
+        // Enter key handling - ONLY on auth inputs, not transfer
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for stored token on page load
+            const storedToken = localStorage.getItem('centurion_token');
+            if (storedToken) {
+                token = storedToken;
+                // Try to auto-load dashboard
+                loadDash();
+            }
+
+            // Auth form enter keys
+            const authInputs = ['regName', 'regEmail', 'regUser', 'regPass', 'regPin', 'logEmail', 'logPass'];
+            authInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') processAuth();
+                    });
+                }
+            });
+        });
+
+        // Handle page visibility changes - pause/resume polling
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopBalancePolling();
+            } else if (token) {
+                startBalancePolling();
+                loadActivity();
+            }
+        });
+
+        // Handle beforeunload - clean logout on browser close (optional)
+        window.addEventListener('beforeunload', () => {
+            stopBalancePolling();
+        });
+    </script>
+</body>
+
+</html>
