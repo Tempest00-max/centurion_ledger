@@ -240,6 +240,14 @@
             font-size: 18px;
             font-weight: 900;
             color: var(--accent-blue);
+            word-break: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.2;
+        }
+
+        .forecast-metric {
+            min-width: 0;
+            overflow: hidden;
         }
 
         .forecast-recommendation {
@@ -551,7 +559,15 @@
             }
 
             .forecast-metric-value {
-                font-size: 16px;
+                font-size: 14px;
+            }
+
+            .forecast-metric {
+                padding: 10px 12px;
+            }
+
+            .forecast-metric-label {
+                font-size: 9px;
             }
 
             .tx-detail-value {
@@ -637,6 +653,119 @@
         .demo-btn {
             transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
         }
+    
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(5, 8, 16, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-ring {
+            width: 64px;
+            height: 64px;
+            border: 3px solid rgba(59, 130, 246, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-ring-inner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(16, 185, 129, 0.1);
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 1.2s linear infinite reverse;
+            position: absolute;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--accent-blue);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .loading-subtext {
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .loading-particles {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            pointer-events: none;
+        }
+
+        .loading-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(59, 130, 246, 0.4);
+            border-radius: 50%;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .loading-particle:nth-child(1) { top: 20%; left: 20%; animation-delay: 0s; }
+        .loading-particle:nth-child(2) { top: 60%; left: 80%; animation-delay: 0.5s; }
+        .loading-particle:nth-child(3) { top: 80%; left: 30%; animation-delay: 1s; }
+        .loading-particle:nth-child(4) { top: 30%; left: 70%; animation-delay: 1.5s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+            50% { transform: translateY(-20px) scale(1.5); opacity: 0; }
+        }
+
+        /* Button loading state */
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+            pointer-events: none;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-top: -10px;
+            margin-left: -10px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
     </style>
     <base target="_blank">
 <base target="_blank">
@@ -718,9 +847,8 @@
         </div>
 
         <div class="flex gap-2 mt-6">
-            <button onclick="toggleView()"
-                class="flex-1 text-center text-[10px] font-black text-slate-500 uppercase hover:text-white transition-colors py-2">Switch
-                Mode</button>
+            <button id="switchModeBtn" onclick="toggleView()"
+                class="flex-1 text-center text-[10px] font-black text-slate-500 uppercase hover:text-white transition-colors py-2">Log In Instead</button>
             <button onclick="toggleDemoHelper()"
                 class="flex-1 text-center text-[10px] font-black text-blue-500 uppercase hover:text-blue-400 transition-colors py-2">Demo
                 Accounts</button>
@@ -902,6 +1030,12 @@
         // ============================================
 
         let isSignup = true;
+
+        // Set initial switch button text
+        document.addEventListener('DOMContentLoaded', () => {
+            const switchBtn = document.getElementById('switchModeBtn');
+            if (switchBtn) switchBtn.innerText = 'Log In Instead';
+        });
         let token = "";
         let user = null;
         let chart = null;
@@ -1002,6 +1136,12 @@
                 mainBtn.innerText = 'Authorize';
             }
 
+            // Update switch button text
+            const switchBtn = document.getElementById('switchModeBtn');
+            if (switchBtn) {
+                switchBtn.innerText = isSignup ? 'Log In Instead' : 'Sign Up Instead';
+            }
+
             document.getElementById('authError').classList.add('hidden');
         }
 
@@ -1015,6 +1155,24 @@
             document.getElementById('authPass').value = password;
             if (isSignup) toggleView();
             document.getElementById('demoHelper').classList.add('hidden');
+        }
+
+        // ============================================
+        // LOADING STATE MANAGEMENT
+        // ============================================
+
+        function showLoading(text, subtext) {
+            const overlay = document.getElementById('loadingOverlay');
+            const mainText = document.getElementById('loadingText');
+            const subText = document.getElementById('loadingSubtext');
+
+            mainText.innerText = text || 'Processing';
+            subText.innerText = subtext || 'Please wait...';
+            overlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
         }
 
         function showError(id, msg) {
@@ -1041,6 +1199,7 @@
             const password = document.getElementById('authPass').value;
 
             if (isSignup) {
+                showLoading('Creating Account', 'Encrypting credentials and initializing vault...');
                 // SIGNUP FLOW
                 const name = document.getElementById('regName').value.trim();
                 const username = document.getElementById('regUser').value.trim();
@@ -1068,6 +1227,7 @@
                 }
 
                 if (errors.length > 0) {
+                    hideLoading();
                     showError('authError', errors.join('<br>'));
                     return;
                 }
@@ -1088,6 +1248,7 @@
                     });
 
                     if (res.ok) {
+                        hideLoading();
                         const data = await res.json();
                         showToast('✅ Account created! Please log in.');
                         toggleView();
@@ -1097,15 +1258,20 @@
                         document.getElementById('regUser').value = '';
                         document.getElementById('regPin').value = '';
                     } else {
+                        hideLoading();
                         const err = await res.json();
                         showError('authError', parseServerError(err, 'Registration failed'));
                     }
                 } catch (err) {
+                    hideLoading();
                     showError('authError', 'Network error. Please check your connection and try again.');
                 }
             } else {
                 // LOGIN FLOW
+                showLoading('Authenticating', 'Verifying credentials and decrypting vault...');
+
                 if (!email || !password) {
+                    hideLoading();
                     showError('authError', '• Email and password are required');
                     return;
                 }
@@ -1122,6 +1288,7 @@
                     });
 
                     if (res.ok) {
+                        hideLoading();
                         const data = await res.json();
                         token = data.access_token || '';
 
@@ -1131,10 +1298,12 @@
 
                         loadDash();
                     } else {
+                        hideLoading();
                         const err = await res.json();
                         showError('authError', parseServerError(err, 'Invalid email or password'));
                     }
                 } catch (err) {
+                    hideLoading();
                     showError('authError', 'Network error. Please check your connection and try again.');
                 }
             }
@@ -1277,6 +1446,8 @@
         }
 
         async function saveSettings() {
+            showLoading('Updating Profile', 'Encrypting new credentials...');
+
             const name = document.getElementById('setName').value.trim();
             const email = document.getElementById('setEmail').value.trim();
             const password = document.getElementById('setPass').value;
@@ -1288,6 +1459,7 @@
 
             if (password) {
                 if (password.length < 8) {
+                    hideLoading();
                     showError('settingsError', 'Password must be 8+ characters');
                     return;
                 }
@@ -1296,6 +1468,7 @@
 
             if (pin) {
                 if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+                    hideLoading();
                     showError('settingsError', 'PIN must be exactly 6 digits');
                     return;
                 }
@@ -1303,6 +1476,7 @@
             }
 
             if (Object.keys(payload).length === 0) {
+                hideLoading();
                 closeSettings();
                 return;
             }
@@ -1319,6 +1493,7 @@
                 });
 
                 if (res.ok) {
+                    hideLoading();
                     showToast('✅ Credentials Updated Successfully');
 
                     // Refresh user data
@@ -1335,10 +1510,12 @@
 
                     closeSettings();
                 } else {
+                    hideLoading();
                     const err = await res.json();
                     showError('settingsError', err.detail || 'Update failed');
                 }
             } catch (err) {
+                hideLoading();
                 showError('settingsError', 'Network error');
             }
         }
@@ -1474,15 +1651,20 @@
                 showError('txError', 'All fields required');
                 return;
             }
+
+            showLoading('Executing Transfer', 'Verifying PIN and processing transaction...');
             if (isNaN(amount) || amount <= 0) {
+                hideLoading();
                 showError('txError', 'Amount must be positive');
                 return;
             }
             if (amount > 100000000) {
+                hideLoading();
                 showError('txError', 'Amount exceeds maximum (100M)');
                 return;
             }
             if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+                hideLoading();
                 showError('txError', 'PIN must be 6 digits');
                 return;
             }
@@ -1509,6 +1691,7 @@
                 );
 
                 if (res.ok) {
+                    hideLoading();
                     const data = await res.json();
                     const symbol = SYMBOLS[data.currency] || data.currency;
                     showToast(`✅ Sent ${symbol}${data.amount_sent} ${data.currency} to ${data.receiver_name}`);
@@ -1529,6 +1712,7 @@
                     loadActivity();
                     loadForecast();
                 } else {
+                    hideLoading();
                     const err = await res.json();
                     const detail = err.detail || 'Transfer Rejected';
 
@@ -1543,6 +1727,7 @@
                     }
                 }
             } catch (err) {
+                hideLoading();
                 showError('txError', 'Network error. Please try again.');
             } finally {
                 btn.classList.remove('loading');
@@ -1773,7 +1958,7 @@
                     html += `
                         <div class="glass p-4 rounded-2xl mb-4 border border-blue-500/10">
                             <h4 class="text-[10px] font-black uppercase text-blue-400 mb-3">📊 30-Day Projection</h4>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div class="forecast-metric">
                                     <div class="forecast-metric-label">Predicted Outflow</div>
                                     <div class="forecast-metric-value">
@@ -2010,6 +2195,24 @@
             stopBalancePolling();
         });
     </script>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div style="position: relative; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+            <div class="loading-ring"></div>
+            <div class="loading-ring-inner"></div>
+        </div>
+        <div class="loading-particles">
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+            <div class="loading-particle"></div>
+        </div>
+        <div style="text-align: center;">
+            <p id="loadingText" class="loading-text">Processing</p>
+            <p id="loadingSubtext" class="loading-subtext">Securing your vault...</p>
+        </div>
+    </div>
 </body>
 
 </html>
