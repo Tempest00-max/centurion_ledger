@@ -722,15 +722,128 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(5, 8, 16, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: var(--bg-primary);
             z-index: 200;
             display: none;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            gap: 24px;
+            gap: 32px;
+        }
+
+        .loading-overlay.startup {
+            display: flex;
+            background: var(--bg-primary);
+        }
+
+        .loading-brand {
+            font-size: 2.5rem;
+            font-weight: 900;
+            font-style: italic;
+            color: var(--accent-blue);
+            letter-spacing: -2px;
+            text-transform: uppercase;
+            animation: brandPulse 2s ease-in-out infinite;
+        }
+
+        .loading-brand-sub {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        @keyframes brandPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.98); }
+        }
+
+        .loading-vault-ring {
+            width: 80px;
+            height: 80px;
+            border: 3px solid rgba(59, 130, 246, 0.15);
+            border-top-color: var(--accent-blue);
+            border-right-color: rgba(16, 185, 129, 0.6);
+            border-radius: 50%;
+            animation: vaultSpin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            position: relative;
+        }
+
+        .loading-vault-ring::before {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border: 2px solid rgba(59, 130, 246, 0.1);
+            border-top-color: rgba(59, 130, 246, 0.4);
+            border-radius: 50%;
+            animation: vaultSpin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite reverse;
+        }
+
+        .loading-vault-ring::after {
+            content: '';
+            position: absolute;
+            inset: 18px;
+            border: 2px solid rgba(16, 185, 129, 0.1);
+            border-top-color: rgba(16, 185, 129, 0.5);
+            border-radius: 50%;
+            animation: vaultSpin 1.5s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        @keyframes vaultSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-status {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--text-muted);
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .loading-status-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+            100% { content: ''; }
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .loading-progress-bar {
+            width: 200px;
+            height: 2px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 1px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loading-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+            border-radius: 1px;
+            animation: progressFill 3s ease-in-out infinite;
+        }
+
+        @keyframes progressFill {
+            0% { width: 0%; opacity: 0.5; }
+            50% { width: 70%; opacity: 1; }
+            100% { width: 100%; opacity: 0.3; }
         }
 
         .loading-overlay.active {
@@ -970,7 +1083,7 @@
                     <!-- BALANCE CARD -->
                     <div class="bal-container glass">
                         <div class="w-full min-w-0">
-                            <p class="text-slate-500 uppercase text-[9px] font-black mb-4">Registry Liquidity</p>
+                            <p class="text-slate-500 uppercase text-[9px] font-black mb-4">Account Balance</p>
                             <h2 id="balDisp">€0.00</h2>
                             <p id="balChange" class="text-[10px] font-black mt-2 hidden"></p>
                             <p class="text-[9px] text-slate-600 mt-1">Base: NGN | Select currency to convert</p>
@@ -1015,8 +1128,11 @@
             <div class="glass p-8 rounded-[40px] h-fit sticky top-6 border border-blue-500/10">
                 <h3 class="text-2xl font-black italic mb-6 uppercase text-blue-500">Swift Transfer</h3>
                 <div class="space-y-4">
-                    <input id="targ" placeholder="ID or Email"
-                        class="w-full auth-input p-4 rounded-xl outline-none text-xs">
+                    <div>
+                        <p class="currency-label">Recipient Vault ID or Email</p>
+                        <input id="targ" placeholder="Enter Vault ID or Email"
+                            class="w-full auth-input p-4 rounded-xl outline-none text-xs">
+                    </div>
 
                     <div>
                         <p class="currency-label">Amount & Currency</p>
@@ -1244,11 +1360,18 @@
 
             mainText.innerText = text || 'Processing';
             subText.innerText = subtext || 'Please wait...';
+            overlay.classList.remove('startup');
             overlay.classList.add('active');
         }
 
         function hideLoading() {
-            document.getElementById('loadingOverlay').classList.remove('active');
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.remove('active');
+            // If auth is not ready, keep startup style
+            if (!document.getElementById('authBox').classList.contains('hidden') && 
+                document.getElementById('dashBox').classList.contains('hidden')) {
+                overlay.classList.add('startup');
+            }
         }
 
         function showError(id, msg) {
@@ -2200,13 +2323,16 @@
                     scales: {
                         x: {
                             display: true,
-                            ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 9 } },
-                            grid: { color: 'rgba(255,255,255,0.03)' }
+                            ticks: { 
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || 'rgba(255,255,255,0.3)', 
+                                font: { size: 9 } 
+                            },
+                            grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim() || 'rgba(255,255,255,0.03)' }
                         },
                         y: {
                             display: true,
                             ticks: {
-                                color: 'rgba(255,255,255,0.3)',
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || 'rgba(255,255,255,0.3)',
                                 font: { size: 9 },
                                 callback: function (value) {
                                     const absVal = Math.abs(value);
@@ -2216,7 +2342,7 @@
                                     return '₦' + absVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
                                 }
                             },
-                            grid: { color: 'rgba(255,255,255,0.03)' }
+                            grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim() || 'rgba(255,255,255,0.03)' }
                         }
                     }
                 }
@@ -2236,6 +2362,15 @@
 
         // Enter key handling - ONLY on auth inputs, not transfer
         document.addEventListener('DOMContentLoaded', () => {
+            // Hide startup loader after a brief delay to show the brand
+            setTimeout(() => {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay.classList.contains('startup')) {
+                    overlay.classList.remove('startup');
+                    overlay.style.display = 'none';
+                }
+            }, 2500);
+
             // Check for stored token on page load
             const storedToken = localStorage.getItem('centurion_token');
             if (storedToken) {
@@ -2273,20 +2408,18 @@
     </script>
 
     <!-- LOADING OVERLAY -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div style="position: relative; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
-            <div class="loading-ring"></div>
-            <div class="loading-ring-inner"></div>
+    <div id="loadingOverlay" class="loading-overlay startup">
+        <div style="text-align: center; margin-bottom: 8px;">
+            <div class="loading-brand">CENTURION</div>
+            <div class="loading-brand-sub">Tactical Ledger System</div>
         </div>
-        <div class="loading-particles">
-            <div class="loading-particle"></div>
-            <div class="loading-particle"></div>
-            <div class="loading-particle"></div>
-            <div class="loading-particle"></div>
+        <div class="loading-vault-ring"></div>
+        <div class="loading-progress-bar">
+            <div class="loading-progress-fill"></div>
         </div>
         <div style="text-align: center;">
-            <p id="loadingText" class="loading-text">Processing</p>
-            <p id="loadingSubtext" class="loading-subtext">Securing your vault...</p>
+            <p id="loadingText" class="loading-status">Initializing Vault<span class="loading-status-dots"></span></p>
+            <p id="loadingSubtext" class="loading-subtext" style="margin-top: 4px;">Waking up secure servers...</p>
         </div>
     </div>
 </body>
