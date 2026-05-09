@@ -11,6 +11,7 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, cast, String
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import IntegrityError
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
