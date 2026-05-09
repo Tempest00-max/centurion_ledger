@@ -1559,9 +1559,14 @@
         async function processAuth() {
             const email = document.getElementById('authEmail').value.trim();
             const password = document.getElementById('authPass').value;
+            const mainBtn = document.getElementById('mainBtn');
+
+            // Prevent double-clicks during auth
+            if (mainBtn.classList.contains('btn-loading')) return;
 
             if (isSignup) {
                 showLoading('Creating Account', 'Encrypting credentials and initializing vault...');
+                mainBtn.classList.add('btn-loading');
                 // SIGNUP FLOW
                 const name = document.getElementById('regName').value.trim();
                 const username = document.getElementById('regUser').value.trim();
@@ -1611,6 +1616,7 @@
 
                     if (res.ok) {
                         hideLoading();
+                        mainBtn.classList.remove('btn-loading');
                         const data = await res.json();
                         showToast('✅ Account created! Please log in.');
                         toggleView();
@@ -1621,19 +1627,23 @@
                         document.getElementById('regPin').value = '';
                     } else {
                         hideLoading();
+                        mainBtn.classList.remove('btn-loading');
                         const err = await res.json();
                         showError('authError', parseServerError(err, 'Registration failed'));
                     }
                 } catch (err) {
                     hideLoading();
+                    mainBtn.classList.remove('btn-loading');
                     showError('authError', 'Network error. Please check your connection and try again.');
                 }
             } else {
                 // LOGIN FLOW
                 showLoading('Authenticating', 'Verifying credentials and decrypting vault...');
+                mainBtn.classList.add('btn-loading');
 
                 if (!email || !password) {
                     hideLoading();
+                    mainBtn.classList.remove('btn-loading');
                     showError('authError', '• Email and password are required');
                     return;
                 }
@@ -1650,7 +1660,6 @@
                     });
 
                     if (res.ok) {
-                        hideLoading();
                         const data = await res.json();
                         token = data.access_token || '';
 
@@ -1658,14 +1667,17 @@
                             localStorage.setItem('centurion_token', token);
                         }
 
+                        // Keep loading visible while dashboard loads — vault ring stays spinning
                         loadDash();
                     } else {
                         hideLoading();
+                        mainBtn.classList.remove('btn-loading');
                         const err = await res.json();
                         showError('authError', parseServerError(err, 'Invalid email or password'));
                     }
                 } catch (err) {
                     hideLoading();
+                    mainBtn.classList.remove('btn-loading');
                     showError('authError', 'Network error. Please check your connection and try again.');
                 }
             }
@@ -1725,8 +1737,14 @@
                 startBalancePolling();
 
                 showToast(`Welcome back, ${user.owner_name || 'Commander'}`);
+                hideLoading();
+                const mainBtn = document.getElementById('mainBtn');
+                if (mainBtn) mainBtn.classList.remove('btn-loading');
             } catch (err) {
                 console.error('Dashboard load failed:', err);
+                hideLoading();
+                const mainBtn = document.getElementById('mainBtn');
+                if (mainBtn) mainBtn.classList.remove('btn-loading');
                 showError('authError', 'Failed to load dashboard. Please try again.');
             }
         }
