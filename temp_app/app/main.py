@@ -278,12 +278,13 @@ async def health_check():
 @limiter.limit("5/minute")
 async def signup(
     request: Request, 
-    request_data: schemas.AccountBase, 
-    password: str = Query(...), 
-    pin: str = Query(...), 
+    request_data: schemas.SignupRequest, 
     db: Session = Depends(get_db)
 ):
     """Create new account with validation."""
+    password = request_data.password
+    pin = request_data.pin
+
     # PIN validation
     if not pin or len(pin) != 6 or not pin.isdigit():
         raise HTTPException(status_code=400, detail="PIN must be exactly 6 digits")
