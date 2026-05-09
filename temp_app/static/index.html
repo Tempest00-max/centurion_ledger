@@ -1131,7 +1131,19 @@
                     <div>
                         <p class="currency-label">Recipient Vault ID or Email</p>
                         <input id="targ" placeholder="Enter Vault ID or Email"
-                            class="w-full auth-input p-4 rounded-xl outline-none text-xs">
+                            class="w-full auth-input p-4 rounded-xl outline-none text-xs"
+                            oninput="debounceLookup()">
+                        <div id="recipientPreview" class="hidden mt-2 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs font-black">👤</div>
+                                <div class="flex-1 min-w-0">
+                                    <p id="previewName" class="text-sm font-bold text-white truncate"></p>
+                                    <p id="previewEmail" class="text-[10px] text-slate-400 truncate"></p>
+                                </div>
+                                <span class="text-[9px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 font-black uppercase">Verified</span>
+                            </div>
+                        </div>
+                        <p id="lookupError" class="text-red-400 text-[10px] font-black mt-2 hidden"></p>
                     </div>
 
                     <div>
@@ -1347,6 +1359,77 @@
             document.getElementById('authPass').value = password;
             if (isSignup) toggleView();
             document.getElementById('demoHelper').classList.add('hidden');
+        }
+
+        // ============================================
+        // RECIPIENT LOOKUP (Transfer Preview)
+        // ============================================
+
+        let lookupTimeout = null;
+        let lastLookupTarget = '';
+
+        function debounceLookup() {
+            const target = document.getElementById('targ').value.trim();
+            const preview = document.getElementById('recipientPreview');
+            const error = document.getElementById('lookupError');
+
+            // Clear previous error/preview if empty
+            if (!target) {
+                preview.classList.add('hidden');
+                error.classList.add('hidden');
+                lastLookupTarget = '';
+                return;
+            }
+
+            // Debounce: wait 600ms after user stops typing
+            if (lookupTimeout) clearTimeout(lookupTimeout);
+            lookupTimeout = setTimeout(() => {
+                if (target !== lastLookupTarget) {
+                    lookupRecipient(target);
+                }
+            }, 600);
+        }
+
+        async function lookupRecipient(target) {
+            if (!token || !target) return;
+
+            const preview = document.getElementById('recipientPreview');
+            const error = document.getElementById('lookupError');
+            const nameEl = document.getElementById('previewName');
+            const emailEl = document.getElementById('previewEmail');
+
+            try {
+                const res = await fetch(`/lookup?target=${encodeURIComponent(target)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    credentials: 'include'
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    lastLookupTarget = target;
+
+                    nameEl.innerText = data.owner_name || 'Unknown';
+                    emailEl.innerText = data.email || target;
+
+                    preview.classList.remove('hidden');
+                    error.classList.add('hidden');
+                } else {
+                    const err = await res.json();
+                    preview.classList.add('hidden');
+
+                    // Only show error if it's not "not found" (user might still be typing)
+                    if (res.status === 404) {
+                        error.innerText = 'Account not found. Check the email or Vault ID.';
+                        error.classList.remove('hidden');
+                    } else if (res.status === 400) {
+                        error.innerText = err.detail || 'Invalid format';
+                        error.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                // Silent fail on lookup errors — don't block the user
+                preview.classList.add('hidden');
+            }
         }
 
         // ============================================
@@ -1895,6 +1978,10 @@
                     const symbol = SYMBOLS[data.currency] || data.currency;
                     showToast(`✅ Sent ${symbol}${data.amount_sent} ${data.currency} to ${data.receiver_name}`);
 
+                    // Clear recipient preview
+                    document.getElementById('recipientPreview').classList.add('hidden');
+                    lastLookupTarget = '';
+
                     // Clear form
                     document.getElementById('targ').value = '';
                     document.getElementById('amnt').value = '';
@@ -2254,9 +2341,16 @@
                 annotations.unshift(null);
 
                 labels.push('Start');
-                recent.forEach(t => {
+                recent.forEach((t, idx) => {
                     const d = t.created_at ? new Date(t.created_at) : new Date();
-                    labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                    // If multiple transactions same day, add time to distinguish
+                    const sameDayAsPrev = idx > 0 && recent[idx-1].created_at && 
+                        new Date(recent[idx-1].created_at).toDateString() === d.toDateString();
+                    if (sameDayAsPrev) {
+                        labels.push(d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }));
+                    } else {
+                        labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+                    }
                 });
             } else {
                 // No transactions - show flat line at current balance
@@ -2336,7 +2430,11 @@
                                 font: { size: 9 },
                                 callback: function (value) {
                                     const absVal = Math.abs(value);
-                                    if (absVal >= 1000000000) return '₦' + (absVal / 1000000000).toFixed(2) + 'B';
+                                    // For billions, show 3 decimal places to capture variation
+                                    if (absVal >= 1000000000) {
+                                        const billions = absVal / 1000000000;
+                                        return '₦' + billions.toFixed(3) + 'B';
+                                    }
                                     if (absVal >= 1000000) return '₦' + (absVal / 1000000).toFixed(2) + 'M';
                                     if (absVal >= 1000) return '₦' + (absVal / 1000).toFixed(1) + 'K';
                                     return '₦' + absVal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
